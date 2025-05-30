@@ -53,39 +53,6 @@ Please see LICENSE files in the repository root for full details.
             }
         }
     }
-
-    .mx_LegacyRoomListHeader_plusButton {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        position: relative;
-        padding: 8px;
-        margin-left: 8px;
-        margin-right: 12px;
-        background-color: $panel-actions;
-        box-sizing: border-box;
-        flex-shrink: 0;
-
-        &::before {
-            content: "";
-            width: 16px;
-            height: 16px;
-            position: absolute;
-            mask-position: center;
-            mask-size: contain;
-            mask-repeat: no-repeat;
-            background-color: $secondary-content;
-            mask-image: url("@vector-im/compound-design-tokens/icons/plus.svg");
-        }
-
-        &:hover {
-            background-color: $tertiary-content;
-
-            &::before {
-                background-color: $background;
-            }
-        }
-    }
 }
 
 .mx_LegacyRoomListHeader_iconInvite::before {

@@ -57,23 +57,14 @@ const BUSY_PRESENCE_NAME = new UnstableValue("busy", "org.matrix.msc3026.busy");
 enum Icon {
     // Note: the names here are used in CSS class names
     None = "NONE", // ... except this one
-    Globe = "GLOBE",
     PresenceOnline = "ONLINE",
-    PresenceAway = "AWAY",
-    PresenceOffline = "OFFLINE",
     PresenceBusy = "BUSY",
 }
 
 function tooltipText(variant: Icon): string | undefined {
     switch (variant) {
-        case Icon.Globe:
-            return _t("room|header|room_is_public");
         case Icon.PresenceOnline:
             return _t("presence|online");
-        case Icon.PresenceAway:
-            return _t("presence|away");
-        case Icon.PresenceOffline:
-            return _t("presence|offline");
         case Icon.PresenceBusy:
             return _t("presence|busy");
     }
@@ -152,10 +143,6 @@ export default class DecoratedRoomAvatar extends React.PureComponent<IProps, ISt
             icon = Icon.PresenceBusy;
         } else if (isOnline) {
             icon = Icon.PresenceOnline;
-        } else if (this.dmUser.presence === "offline") {
-            icon = Icon.PresenceOffline;
-        } else if (this.dmUser.presence === "unavailable") {
-            icon = Icon.PresenceAway;
         }
 
         return icon;
@@ -172,14 +159,8 @@ export default class DecoratedRoomAvatar extends React.PureComponent<IProps, ISt
                 this.dmUser = MatrixClientPeg.safeGet().getUser(otherUserId);
                 icon = this.getPresenceIcon();
             }
-        } else {
-            // Track publicity
-            icon = this.isPublicRoom ? Icon.Globe : Icon.None;
-            if (!this.isWatchingTimeline) {
-                this.props.room.on(RoomEvent.Timeline, this.onRoomTimeline);
-                this.isWatchingTimeline = true;
-            }
         }
+        
         return icon;
     }
 

@@ -146,39 +146,36 @@ Please see LICENSE files in the repository root for full details.
                 }
             }
 
-            .mx_LeftPanel_exploreButton,
-            .mx_LeftPanel_recentsButton {
+            .mx_LeftPanel_plusButton {
                 width: 32px;
                 height: 32px;
                 border-radius: 8px;
-                background-color: $panel-actions;
                 position: relative;
+                padding: 8px;
                 margin-left: 8px;
-
+                background-color: $panel-actions;
+                box-sizing: border-box;
+                flex-shrink: 0;
+        
                 &::before {
                     content: "";
-                    position: absolute;
-                    top: 8px;
-                    left: 8px;
                     width: 16px;
                     height: 16px;
+                    position: absolute;
                     mask-position: center;
                     mask-size: contain;
                     mask-repeat: no-repeat;
                     background-color: $secondary-content;
+                    mask-image: url("@vector-im/compound-design-tokens/icons/plus.svg");
                 }
-
+        
                 &:hover {
                     background-color: $tertiary-content;
-
+        
                     &::before {
                         background-color: $background;
                     }
                 }
-            }
-
-            .mx_LeftPanel_exploreButton::before {
-                mask-image: url("$(res)/img/element-icons/roomlist/explore.svg");
             }
 
             .mx_LeftPanel_recentsButton::before {
@@ -237,7 +234,7 @@ Please see LICENSE files in the repository root for full details.
                     background-color: transparent;
                 }
 
-                .mx_LeftPanel_exploreButton,
+                .mx_LeftPanel_plusButton,
                 .mx_LeftPanel_recentsButton {
                     margin-left: 0;
                     margin-top: 8px;

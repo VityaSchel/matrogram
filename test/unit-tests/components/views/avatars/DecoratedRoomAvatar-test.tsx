@@ -8,7 +8,7 @@ Please see LICENSE files in the repository root for full details.
 
 import { render, waitFor } from "jest-matrix-react";
 import { mocked } from "jest-mock";
-import { JoinRule, type MatrixClient, PendingEventOrdering, Room, RoomMember } from "matrix-js-sdk/src/matrix";
+import { type MatrixClient, PendingEventOrdering, Room, RoomMember } from "matrix-js-sdk/src/matrix";
 import React from "react";
 import userEvent from "@testing-library/user-event";
 
@@ -44,30 +44,6 @@ describe("DecoratedRoomAvatar", () => {
 
     afterEach(() => {
         jest.restoreAllMocks();
-    });
-
-    it("shows an avatar with globe icon and tooltip for public room", async () => {
-        const dmRoomMap = {
-            getUserIdForRoomId: jest.fn(),
-        } as unknown as DMRoomMap;
-        jest.spyOn(DMRoomMap, "shared").mockReturnValue(dmRoomMap);
-        room.getJoinRule = jest.fn().mockReturnValue(JoinRule.Public);
-
-        const { container, asFragment } = renderComponent();
-
-        const globe = container.querySelector(".mx_DecoratedRoomAvatar_icon_globe")!;
-        expect(globe).toBeVisible();
-        await userEvent.hover(globe!);
-
-        // wait for the tooltip to open
-        const tooltip = await waitFor(() => {
-            const tooltip = document.getElementById(globe.getAttribute("aria-labelledby")!);
-            expect(tooltip).toBeVisible();
-            return tooltip;
-        });
-        expect(tooltip).toHaveTextContent("This room is public");
-
-        expect(asFragment()).toMatchSnapshot();
     });
 
     it("shows the presence indicator in a DM room that also has functional members", async () => {

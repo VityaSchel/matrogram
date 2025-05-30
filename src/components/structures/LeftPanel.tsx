@@ -19,7 +19,7 @@ import { Action } from "../../dispatcher/actions";
 import RoomSearch from "./RoomSearch";
 import type ResizeNotifier from "../../utils/ResizeNotifier";
 import SpaceStore from "../../stores/spaces/SpaceStore";
-import { MetaSpace, type SpaceKey, UPDATE_SELECTED_SPACE } from "../../stores/spaces";
+import { type SpaceKey, UPDATE_SELECTED_SPACE } from "../../stores/spaces";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
 import UIStore from "../../stores/UIStore";
 import { type IState as IRovingTabIndexState } from "../../accessibility/RovingTabIndex";
@@ -32,12 +32,12 @@ import RoomBreadcrumbs from "../views/rooms/RoomBreadcrumbs";
 import { KeyBindingAction } from "../../accessibility/KeyboardShortcuts";
 import { shouldShowComponent } from "../../customisations/helpers/UIComponents";
 import { UIComponent } from "../../settings/UIFeature";
-import AccessibleButton, { type ButtonEvent } from "../views/elements/AccessibleButton";
-import PosthogTrackers from "../../PosthogTrackers";
+import AccessibleButton from "../views/elements/AccessibleButton";
 import type PageType from "../../PageTypes";
 import { Landmark, LandmarkNavigation } from "../../accessibility/LandmarkNavigation";
 import SettingsStore from "../../settings/SettingsStore";
 import { RoomListPanel } from "../views/rooms/RoomListPanel";
+import PlusButton from "./PlusButton";
 
 interface IProps {
     isMinimized: boolean;
@@ -117,11 +117,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
 
     private onDialPad = (): void => {
         dis.fire(Action.OpenDialPad);
-    };
-
-    private onExplore = (ev: ButtonEvent): void => {
-        dis.fire(Action.ViewRoomDirectory);
-        PosthogTrackers.trackInteraction("WebLeftPanelExploreRoomsButton", ev);
     };
 
     private refreshStickyHeaders = (): void => {
@@ -351,17 +346,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
             );
         }
 
-        let rightButton: JSX.Element | undefined;
-        if (this.state.activeSpace === MetaSpace.Home && shouldShowComponent(UIComponent.ExploreRooms)) {
-            rightButton = (
-                <AccessibleButton
-                    className="mx_LeftPanel_exploreButton"
-                    onClick={this.onExplore}
-                    title={_t("action|explore_rooms")}
-                />
-            );
-        }
-
         return (
             <div
                 className="mx_LeftPanel_filterContainer"
@@ -373,7 +357,7 @@ export default class LeftPanel extends React.Component<IProps, IState> {
                 <RoomSearch isMinimized={this.props.isMinimized} />
 
                 {dialPadButton}
-                {rightButton}
+                <PlusButton />
             </div>
         );
     }
