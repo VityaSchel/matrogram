@@ -33,13 +33,7 @@ import RoomListStore, { LISTS_UPDATE_EVENT, LISTS_LOADING_EVENT } from "../../..
 import { arrayFastClone, arrayHasOrderChange } from "../../../utils/arrays";
 import { objectExcluding, objectHasDiff } from "../../../utils/objects";
 import type ResizeNotifier from "../../../utils/ResizeNotifier";
-import ContextMenu, {
-    ChevronFace,
-    ContextMenuTooltipButton,
-    StyledMenuItemCheckbox,
-    StyledMenuItemRadio,
-} from "../../structures/ContextMenu";
-import AccessibleButton, { type ButtonEvent } from "../../views/elements/AccessibleButton";
+import AccessibleButton from "../../views/elements/AccessibleButton";
 import type ExtraTile from "./ExtraTile";
 import NotificationBadge from "./NotificationBadge";
 import RoomTile from "./RoomTile";
@@ -83,10 +77,7 @@ interface ResizeDelta {
     height: number;
 }
 
-type PartialDOMRect = Pick<DOMRect, "left" | "top" | "height">;
-
 interface IState {
-    contextMenuPosition?: PartialDOMRect;
     isResizing: boolean;
     isExpanded: boolean; // used for the for expand of the sublist when the room list is being filtered
     height: number;
@@ -265,6 +256,22 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         if (Object.keys(stateUpdates).length > 0) {
             this.setState(stateUpdates);
         }
+
+        let forceUpdate = false;
+        if (RoomListStore.instance.getTagSorting(this.props.tagId) !== SortAlgorithm.Recent) {
+            RoomListStore.instance.setTagSorting(this.props.tagId, SortAlgorithm.Recent);
+            forceUpdate = true;
+        }
+
+        if (this.props.tagId !== DefaultTagID.Invite && RoomListStore.instance.getListOrder(this.props.tagId) !== ListAlgorithm.Natural) {
+            RoomListStore.instance.setListOrder(this.props.tagId, ListAlgorithm.Natural);
+            forceUpdate = true;
+        }
+
+        if (forceUpdate) {
+            this.forceUpdate();
+
+        }
     };
 
     private onAction = (payload: ActionPayload): void => {
@@ -342,41 +349,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         if (element) {
             element.focus();
         }
-    };
-
-    private onOpenMenuClick = (ev: ButtonEvent): void => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        const target = ev.target as HTMLButtonElement;
-        this.setState({ contextMenuPosition: target.getBoundingClientRect() });
-    };
-
-    private onContextMenu = (ev: React.MouseEvent): void => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        this.setState({
-            contextMenuPosition: {
-                left: ev.clientX,
-                top: ev.clientY,
-                height: 0,
-            },
-        });
-    };
-
-    private onCloseMenu = (): void => {
-        this.setState({ contextMenuPosition: undefined });
-    };
-
-    private onUnreadFirstChanged = (): void => {
-        const isUnreadFirst = RoomListStore.instance.getListOrder(this.props.tagId) === ListAlgorithm.Importance;
-        const newAlgorithm = isUnreadFirst ? ListAlgorithm.Natural : ListAlgorithm.Importance;
-        RoomListStore.instance.setListOrder(this.props.tagId, newAlgorithm);
-        this.forceUpdate(); // because if the sublist doesn't have any changes then we will miss the list order change
-    };
-
-    private onTagSortChanged = async (sort: SortAlgorithm): Promise<void> => {
-        RoomListStore.instance.setTagSorting(this.props.tagId, sort);
-        this.forceUpdate();
     };
 
     private onBadgeClick = (ev: React.MouseEvent): void => {
@@ -527,80 +499,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         return tiles;
     }
 
-    private renderMenu(): ReactNode {
-        if (this.props.tagId === DefaultTagID.Suggested) return null; // not sortable
-
-        let contextMenu: JSX.Element | undefined;
-        if (this.state.contextMenuPosition) {
-            const isAlphabetical = RoomListStore.instance.getTagSorting(this.props.tagId) === SortAlgorithm.Alphabetic;
-            const isUnreadFirst = RoomListStore.instance.getListOrder(this.props.tagId) === ListAlgorithm.Importance;
-
-            // Invites don't get some nonsense options, so only add them if we have to.
-            let otherSections: JSX.Element | undefined;
-            if (this.props.tagId !== DefaultTagID.Invite) {
-                otherSections = (
-                    <React.Fragment>
-                        <hr />
-                        <fieldset>
-                            <legend className="mx_RoomSublist_contextMenu_title">{_t("common|appearance")}</legend>
-                            <StyledMenuItemCheckbox
-                                onClose={this.onCloseMenu}
-                                onChange={this.onUnreadFirstChanged}
-                                checked={isUnreadFirst}
-                            >
-                                {_t("room_list|sort_unread_first")}
-                            </StyledMenuItemCheckbox>
-                        </fieldset>
-                    </React.Fragment>
-                );
-            }
-
-            contextMenu = (
-                <ContextMenu
-                    chevronFace={ChevronFace.None}
-                    left={this.state.contextMenuPosition.left}
-                    top={this.state.contextMenuPosition.top + this.state.contextMenuPosition.height}
-                    onFinished={this.onCloseMenu}
-                >
-                    <div className="mx_RoomSublist_contextMenu">
-                        <fieldset>
-                            <legend className="mx_RoomSublist_contextMenu_title">{_t("room_list|sort_by")}</legend>
-                            <StyledMenuItemRadio
-                                onClose={this.onCloseMenu}
-                                onChange={() => this.onTagSortChanged(SortAlgorithm.Recent)}
-                                checked={!isAlphabetical}
-                                name={`mx_${this.props.tagId}_sortBy`}
-                            >
-                                {_t("room_list|sort_by_activity")}
-                            </StyledMenuItemRadio>
-                            <StyledMenuItemRadio
-                                onClose={this.onCloseMenu}
-                                onChange={() => this.onTagSortChanged(SortAlgorithm.Alphabetic)}
-                                checked={isAlphabetical}
-                                name={`mx_${this.props.tagId}_sortBy`}
-                            >
-                                {_t("room_list|sort_by_alphabet")}
-                            </StyledMenuItemRadio>
-                        </fieldset>
-                        {otherSections}
-                    </div>
-                </ContextMenu>
-            );
-        }
-
-        return (
-            <React.Fragment>
-                <ContextMenuTooltipButton
-                    className="mx_RoomSublist_menuButton"
-                    onClick={this.onOpenMenuClick}
-                    title={_t("room_list|sublist_options")}
-                    isExpanded={!!this.state.contextMenuPosition}
-                />
-                {contextMenu}
-            </React.Fragment>
-        );
-    }
-
     private renderHeader(): React.ReactElement {
         return (
             <RovingTabIndexWrapper inputRef={this.headerButton}>
@@ -666,13 +564,11 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                                         className="mx_RoomSublist_headerText"
                                         aria-expanded={this.state.isExpanded}
                                         onClick={this.onHeaderClick}
-                                        onContextMenu={this.onContextMenu}
                                         title={this.props.isMinimized ? this.props.label : undefined}
                                     >
                                         <span className={collapseClasses} />
                                         <span id={getLabelId(this.props.tagId)}>{this.props.label}</span>
                                     </AccessibleButton>
-                                    {this.renderMenu()}
                                     {this.props.isMinimized ? null : badgeContainer}
                                     {this.props.isMinimized ? null : addRoomButton}
                                 </div>
@@ -697,7 +593,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         const hidden = !this.state.rooms.length && !this.props.extraTiles?.length && this.props.alwaysVisible !== true;
         const classes = classNames({
             mx_RoomSublist: true,
-            mx_RoomSublist_hasMenuOpen: !!this.state.contextMenuPosition,
             mx_RoomSublist_minimized: this.props.isMinimized,
             mx_RoomSublist_hidden: hidden,
         });

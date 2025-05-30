@@ -13,7 +13,6 @@ import { type OrderingAlgorithm } from "./list-ordering/OrderingAlgorithm";
 
 export enum SortAlgorithm {
     Manual = "MANUAL",
-    Alphabetic = "ALPHABETIC",
     Recent = "RECENT",
 }
 
