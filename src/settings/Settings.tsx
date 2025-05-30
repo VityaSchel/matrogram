@@ -1171,11 +1171,11 @@ export const SETTINGS: Settings = {
     },
     "layout": {
         supportedLevels: LEVELS_ACCOUNT_SETTINGS,
-        default: Layout.Group,
+        default: Layout.Bubble,
     },
     "Images.size": {
         supportedLevels: LEVELS_ACCOUNT_SETTINGS,
-        default: ImageSize.Normal,
+        default: ImageSize.Large,
     },
     "showChatEffects": {
         supportedLevels: LEVELS_ROOM_SETTINGS_WITH_ROOM,
@@ -1200,7 +1200,7 @@ export const SETTINGS: Settings = {
         displayName: _td("settings|all_rooms_home"),
         description: _td("settings|all_rooms_home_description"),
         supportedLevels: LEVELS_ACCOUNT_SETTINGS,
-        default: false,
+        default: true,
     },
     "Spaces.enabledMetaSpaces": {
         supportedLevels: LEVELS_ACCOUNT_SETTINGS,

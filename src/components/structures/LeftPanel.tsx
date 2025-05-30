@@ -23,12 +23,9 @@ import { type SpaceKey, UPDATE_SELECTED_SPACE } from "../../stores/spaces";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
 import UIStore from "../../stores/UIStore";
 import { type IState as IRovingTabIndexState } from "../../accessibility/RovingTabIndex";
-import LegacyRoomListHeader from "../views/rooms/LegacyRoomListHeader";
 import { BreadcrumbsStore } from "../../stores/BreadcrumbsStore";
 import RoomListStore, { LISTS_UPDATE_EVENT } from "../../stores/room-list/RoomListStore";
 import { UPDATE_EVENT } from "../../stores/AsyncStore";
-import IndicatorScrollbar from "./IndicatorScrollbar";
-import RoomBreadcrumbs from "../views/rooms/RoomBreadcrumbs";
 import { KeyBindingAction } from "../../accessibility/KeyboardShortcuts";
 import { shouldShowComponent } from "../../customisations/helpers/UIComponents";
 import { UIComponent } from "../../settings/UIFeature";
@@ -317,21 +314,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
         }
     };
 
-    private renderBreadcrumbs(): React.ReactNode {
-        if (this.state.showBreadcrumbs === BreadcrumbsMode.Legacy && !this.props.isMinimized) {
-            return (
-                <IndicatorScrollbar
-                    role="navigation"
-                    aria-label={_t("a11y|recent_rooms")}
-                    className="mx_LeftPanel_breadcrumbsContainer mx_AutoHideScrollbar"
-                    verticalScrollsHorizontally={true}
-                >
-                    <RoomBreadcrumbs />
-                </IndicatorScrollbar>
-            );
-        }
-    }
-
     private renderSearchDialExplore(): React.ReactNode {
         let dialPadButton: JSX.Element | undefined;
 
@@ -399,8 +381,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
             <div className={containerClasses}>
                 <div className="mx_LeftPanel_roomListContainer">
                     {shouldShowComponent(UIComponent.FilterContainer) && this.renderSearchDialExplore()}
-                    {this.renderBreadcrumbs()}
-                    {!this.props.isMinimized && <LegacyRoomListHeader onVisibilityChange={this.refreshStickyHeaders} />}
                     <nav className="mx_LeftPanel_roomListWrapper" aria-label={_t("common|rooms")}>
                         <div
                             className={roomListClasses}
