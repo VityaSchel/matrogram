@@ -10,21 +10,15 @@ Please see LICENSE files in the repository root for full details.
 
 import { type Room } from "matrix-js-sdk/src/matrix";
 import classNames from "classnames";
-import { type Enable, Resizable } from "re-resizable";
-import { type Direction } from "re-resizable/lib/resizer";
-import React, { type JSX, type ComponentType, createRef, type ReactComponentElement, type ReactNode } from "react";
+import { type Enable } from "re-resizable";
+import React, { type JSX, type ComponentType, createRef, type ReactComponentElement } from "react";
 
 import { polyfillTouchEvent } from "../../../@types/polyfill";
 import { KeyBindingAction } from "../../../accessibility/KeyboardShortcuts";
-import { RovingAccessibleButton, RovingTabIndexWrapper } from "../../../accessibility/RovingTabIndex";
 import { Action } from "../../../dispatcher/actions";
 import defaultDispatcher, { type MatrixDispatcher } from "../../../dispatcher/dispatcher";
 import { type ActionPayload } from "../../../dispatcher/payloads";
-import { type ViewRoomPayload } from "../../../dispatcher/payloads/ViewRoomPayload";
 import { getKeyBindingsManager } from "../../../KeyBindingsManager";
-import { _t } from "../../../languageHandler";
-import { type ListNotificationState } from "../../../stores/notifications/ListNotificationState";
-import { RoomNotificationStateStore } from "../../../stores/notifications/RoomNotificationStateStore";
 import { ListAlgorithm, SortAlgorithm } from "../../../stores/room-list/algorithms/models";
 import { type ListLayout } from "../../../stores/room-list/ListLayout";
 import { DefaultTagID, type TagID } from "../../../stores/room-list/models";
@@ -33,9 +27,7 @@ import RoomListStore, { LISTS_UPDATE_EVENT, LISTS_LOADING_EVENT } from "../../..
 import { arrayFastClone, arrayHasOrderChange } from "../../../utils/arrays";
 import { objectExcluding, objectHasDiff } from "../../../utils/objects";
 import type ResizeNotifier from "../../../utils/ResizeNotifier";
-import AccessibleButton from "../../views/elements/AccessibleButton";
 import type ExtraTile from "./ExtraTile";
-import NotificationBadge from "./NotificationBadge";
 import RoomTile from "./RoomTile";
 
 const SHOW_N_BUTTON_HEIGHT = 28; // As defined by CSS
@@ -71,12 +63,6 @@ function getLabelId(tagId: TagID): string {
     return `mx_RoomSublist_label_${tagId}`;
 }
 
-// TODO: Use re-resizer's NumberSize when it is exposed as the type
-interface ResizeDelta {
-    width: number;
-    height: number;
-}
-
 interface IState {
     isResizing: boolean;
     isExpanded: boolean; // used for the for expand of the sublist when the room list is being filtered
@@ -91,15 +77,11 @@ export default class RoomSublist extends React.Component<IProps, IState> {
     private tilesRef = createRef<HTMLDivElement>();
     private dispatcherRef?: string;
     private layout: ListLayout;
-    private heightAtStart: number;
-    private notificationState: ListNotificationState;
 
     public constructor(props: IProps) {
         super(props);
 
         this.layout = RoomListLayoutStore.instance.getLayoutFor(this.props.tagId);
-        this.heightAtStart = 0;
-        this.notificationState = RoomNotificationStateStore.instance.getListState(this.props.tagId);
         this.state = {
             isResizing: false,
             isExpanded: !this.layout.isCollapsed,
@@ -293,153 +275,12 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         }
     };
 
-    private applyHeightChange(newHeight: number): void {
-        const heightInTiles = Math.ceil(this.layout.pixelsToTiles(newHeight - this.padding));
-        this.layout.visibleTiles = Math.min(this.numTiles, heightInTiles);
-    }
-
-    private onResize = (
-        e: MouseEvent | TouchEvent,
-        travelDirection: Direction,
-        refToElement: HTMLElement,
-        delta: ResizeDelta,
-    ): void => {
-        const newHeight = this.heightAtStart + delta.height;
-        this.applyHeightChange(newHeight);
-        this.setState({ height: newHeight });
-    };
-
-    private onResizeStart = (): void => {
-        this.heightAtStart = this.state.height;
-        this.setState({ isResizing: true });
-    };
-
-    private onResizeStop = (
-        e: MouseEvent | TouchEvent,
-        travelDirection: Direction,
-        refToElement: HTMLElement,
-        delta: ResizeDelta,
-    ): void => {
-        const newHeight = this.heightAtStart + delta.height;
-        this.applyHeightChange(newHeight);
-        this.setState({ isResizing: false, height: newHeight });
-    };
-
-    private onShowAllClick = async (): Promise<void> => {
-        // read number of visible tiles before we mutate it
-        const numVisibleTiles = this.numVisibleTiles;
-        const newHeight = this.layout.tilesToPixelsWithPadding(this.numTiles, this.padding);
-        this.applyHeightChange(newHeight);
-        this.setState({ height: newHeight }, () => {
-            // focus the top-most new room
-            this.focusRoomTile(numVisibleTiles);
-        });
-    };
-
-    private onShowLessClick = (): void => {
-        const newHeight = this.layout.tilesToPixelsWithPadding(this.layout.defaultVisibleTiles, this.padding);
-        this.applyHeightChange(newHeight);
-        this.setState({ height: newHeight });
-    };
-
-    private focusRoomTile = (index: number): void => {
-        if (!this.sublistRef.current) return;
-        const elements = this.sublistRef.current.querySelectorAll<HTMLDivElement>(".mx_RoomTile");
-        const element = elements && elements[index];
-        if (element) {
-            element.focus();
-        }
-    };
-
-    private onBadgeClick = (ev: React.MouseEvent): void => {
-        ev.preventDefault();
-        ev.stopPropagation();
-
-        let room;
-        if (this.props.tagId === DefaultTagID.Invite) {
-            // switch to first room as that'll be the top of the list for the user
-            room = this.state.rooms && this.state.rooms[0];
-        } else {
-            // find the first room with a count of the same colour as the badge count
-            room = RoomListStore.instance.orderedLists[this.props.tagId].find((r: Room) => {
-                const notifState = this.notificationState.getForRoom(r);
-                return notifState.count > 0 && notifState.level === this.notificationState.level;
-            });
-        }
-
-        if (room) {
-            defaultDispatcher.dispatch<ViewRoomPayload>({
-                action: Action.ViewRoom,
-                room_id: room.roomId,
-                show_room_tile: true, // to make sure the room gets scrolled into view
-                metricsTrigger: "WebRoomListNotificationBadge",
-                metricsViaKeyboard: ev.type !== "click",
-            });
-        }
-    };
-
-    private onHeaderClick = (): void => {
-        const possibleSticky = this.headerButton.current?.parentElement;
-        const sublist = possibleSticky?.parentElement?.parentElement;
-        const list = sublist?.parentElement?.parentElement;
-        if (!possibleSticky || !list) return;
-
-        // the scrollTop is capped at the height of the header in LeftPanel, the top header is always sticky
-        const listScrollTop = Math.round(list.scrollTop);
-        const isAtTop = listScrollTop <= Math.round(HEADER_HEIGHT);
-        const isAtBottom = listScrollTop >= Math.round(list.scrollHeight - list.offsetHeight);
-        const isStickyTop = possibleSticky.classList.contains("mx_RoomSublist_headerContainer_stickyTop");
-        const isStickyBottom = possibleSticky.classList.contains("mx_RoomSublist_headerContainer_stickyBottom");
-
-        if ((isStickyBottom && !isAtBottom) || (isStickyTop && !isAtTop)) {
-            // is sticky - jump to list
-            sublist.scrollIntoView({ behavior: "smooth" });
-        } else {
-            // on screen - toggle collapse
-            const isExpanded = this.state.isExpanded;
-            this.toggleCollapsed();
-            // if the bottom list is collapsed then scroll it in so it doesn't expand off screen
-            if (!isExpanded && isStickyBottom) {
-                setTimeout(() => {
-                    sublist.scrollIntoView({ behavior: "smooth" });
-                }, 0);
-            }
-        }
-    };
-
     private toggleCollapsed = (): void => {
         if (this.props.forceExpanded) return;
         this.layout.isCollapsed = this.state.isExpanded;
         this.setState({ isExpanded: !this.layout.isCollapsed });
         if (this.props.onListCollapse) {
             this.props.onListCollapse(!this.layout.isCollapsed);
-        }
-    };
-
-    private onHeaderKeyDown = (ev: React.KeyboardEvent): void => {
-        const action = getKeyBindingsManager().getRoomListAction(ev);
-        switch (action) {
-            case KeyBindingAction.CollapseRoomListSection:
-                ev.stopPropagation();
-                if (this.state.isExpanded) {
-                    // Collapse the room sublist if it isn't already
-                    this.toggleCollapsed();
-                }
-                break;
-            case KeyBindingAction.ExpandRoomListSection: {
-                ev.stopPropagation();
-                if (!this.state.isExpanded) {
-                    // Expand the room sublist if it isn't already
-                    this.toggleCollapsed();
-                } else if (this.sublistRef.current) {
-                    // otherwise focus the first room
-                    const element = this.sublistRef.current.querySelector(".mx_RoomTile") as HTMLDivElement;
-                    if (element) {
-                        element.focus();
-                    }
-                }
-                break;
-            }
         }
     };
 
@@ -499,89 +340,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         return tiles;
     }
 
-    private renderHeader(): React.ReactElement {
-        return (
-            <RovingTabIndexWrapper inputRef={this.headerButton}>
-                {({ onFocus, isActive, ref }) => {
-                    const tabIndex = isActive ? 0 : -1;
-
-                    let ariaLabel = _t("a11y_jump_first_unread_room");
-                    if (this.props.tagId === DefaultTagID.Invite) {
-                        ariaLabel = _t("a11y|jump_first_invite");
-                    }
-
-                    const badge = (
-                        <NotificationBadge
-                            hideIfDot={true}
-                            notification={this.notificationState}
-                            onClick={this.onBadgeClick}
-                            tabIndex={tabIndex}
-                            aria-label={ariaLabel}
-                            showUnsentTooltip={true}
-                        />
-                    );
-
-                    let addRoomButton: JSX.Element | undefined;
-                    if (this.props.AuxButtonComponent) {
-                        const AuxButtonComponent = this.props.AuxButtonComponent;
-                        addRoomButton = <AuxButtonComponent tabIndex={tabIndex} />;
-                    }
-
-                    const collapseClasses = classNames({
-                        mx_RoomSublist_collapseBtn: true,
-                        mx_RoomSublist_collapseBtn_collapsed: !this.state.isExpanded && !this.props.forceExpanded,
-                    });
-
-                    const classes = classNames({
-                        mx_RoomSublist_headerContainer: true,
-                        mx_RoomSublist_headerContainer_withAux: !!addRoomButton,
-                    });
-
-                    const badgeContainer = <div className="mx_RoomSublist_badgeContainer">{badge}</div>;
-
-                    // Note: the addRoomButton conditionally gets moved around
-                    // the DOM depending on whether or not the list is minimized.
-                    // If we're minimized, we want it below the header so it
-                    // doesn't become sticky.
-                    // The same applies to the notification badge.
-                    return (
-                        <div
-                            className={classes}
-                            onKeyDown={this.onHeaderKeyDown}
-                            onFocus={onFocus}
-                            aria-label={this.props.label}
-                            role="treeitem"
-                            aria-expanded={this.state.isExpanded}
-                            aria-level={1}
-                            aria-selected="false"
-                        >
-                            <div className="mx_RoomSublist_stickableContainer">
-                                <div className="mx_RoomSublist_stickable">
-                                    <AccessibleButton
-                                        onFocus={onFocus}
-                                        ref={ref}
-                                        tabIndex={tabIndex}
-                                        className="mx_RoomSublist_headerText"
-                                        aria-expanded={this.state.isExpanded}
-                                        onClick={this.onHeaderClick}
-                                        title={this.props.isMinimized ? this.props.label : undefined}
-                                    >
-                                        <span className={collapseClasses} />
-                                        <span id={getLabelId(this.props.tagId)}>{this.props.label}</span>
-                                    </AccessibleButton>
-                                    {this.props.isMinimized ? null : badgeContainer}
-                                    {this.props.isMinimized ? null : addRoomButton}
-                                </div>
-                            </div>
-                            {this.props.isMinimized ? badgeContainer : null}
-                            {this.props.isMinimized ? addRoomButton : null}
-                        </div>
-                    );
-                }}
-            </RovingTabIndexWrapper>
-        );
-    }
-
     private onScrollPrevent(e: Event): void {
         // the RoomTile calls scrollIntoView and the browser may scroll a div we do not wish to be scrollable
         // this fixes https://github.com/vector-im/element-web/issues/14413
@@ -611,61 +369,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         } else if (visibleTiles.length > 0) {
             const layout = this.layout; // to shorten calls
 
-            const minTiles = Math.min(layout.minVisibleTiles, this.numTiles);
-            const showMoreAtMinHeight = minTiles < this.numTiles;
-            const minHeightPadding = RESIZE_HANDLE_HEIGHT + (showMoreAtMinHeight ? SHOW_N_BUTTON_HEIGHT : 0);
-            const minTilesPx = layout.tilesToPixelsWithPadding(minTiles, minHeightPadding);
-            const maxTilesPx = layout.tilesToPixelsWithPadding(this.numTiles, this.padding);
-            const showMoreBtnClasses = classNames({
-                mx_RoomSublist_showNButton: true,
-            });
-
-            // If we're hiding rooms, show a 'show more' button to the user. This button
-            // floats above the resize handle, if we have one present. If the user has all
-            // tiles visible, it becomes 'show less'.
-            let showNButton: JSX.Element | undefined;
-
-            if (maxTilesPx > this.state.height) {
-                // the height of all the tiles is greater than the section height: we need a 'show more' button
-                const nonPaddedHeight = this.state.height - RESIZE_HANDLE_HEIGHT - SHOW_N_BUTTON_HEIGHT;
-                const amountFullyShown = Math.floor(nonPaddedHeight / this.layout.tileHeight);
-                const numMissing = this.numTiles - amountFullyShown;
-                const label = _t("room_list|show_n_more", { count: numMissing });
-                let showMoreText: ReactNode = <span className="mx_RoomSublist_showNButtonText">{label}</span>;
-                if (this.props.isMinimized) showMoreText = null;
-                showNButton = (
-                    <RovingAccessibleButton
-                        role="treeitem"
-                        onClick={this.onShowAllClick}
-                        className={showMoreBtnClasses}
-                        aria-label={label}
-                    >
-                        <span className="mx_RoomSublist_showMoreButtonChevron mx_RoomSublist_showNButtonChevron">
-                            {/* set by CSS masking */}
-                        </span>
-                        {showMoreText}
-                    </RovingAccessibleButton>
-                );
-            } else if (this.numTiles > this.layout.defaultVisibleTiles) {
-                // we have all tiles visible - add a button to show less
-                const label = _t("room_list|show_less");
-                let showLessText: ReactNode = <span className="mx_RoomSublist_showNButtonText">{label}</span>;
-                if (this.props.isMinimized) showLessText = null;
-                showNButton = (
-                    <RovingAccessibleButton
-                        role="treeitem"
-                        onClick={this.onShowLessClick}
-                        className={showMoreBtnClasses}
-                        aria-label={label}
-                    >
-                        <span className="mx_RoomSublist_showLessButtonChevron mx_RoomSublist_showNButtonChevron">
-                            {/* set by CSS masking */}
-                        </span>
-                        {showLessText}
-                    </RovingAccessibleButton>
-                );
-            }
-
             // Figure out if we need a handle
             const handles: Enable = {
                 bottom: true, // the only one we need, but the others must be explicitly false
@@ -682,40 +385,11 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                 handles.bottom = false;
             }
 
-            // We have to account for padding so we can accommodate a 'show more' button and
-            // the resize handle, which are pinned to the bottom of the container. This is the
-            // easiest way to have a resize handle below the button as otherwise we're writing
-            // our own resize handling and that doesn't sound fun.
-            //
-            // The layout class has some helpers for dealing with padding, as we don't want to
-            // apply it in all cases. If we apply it in all cases, the resizing feels like it
-            // goes backwards and can become wildly incorrect (visibleTiles says 18 when there's
-            // only mathematically 7 possible).
-
-            const handleWrapperClasses = classNames({
-                mx_RoomSublist_resizerHandles: true,
-                mx_RoomSublist_resizerHandles_showNButton: !!showNButton,
-            });
-
             content = (
                 <React.Fragment>
-                    <Resizable
-                        size={{ height: this.state.height } as any}
-                        minHeight={minTilesPx}
-                        maxHeight={maxTilesPx}
-                        onResizeStart={this.onResizeStart}
-                        onResizeStop={this.onResizeStop}
-                        onResize={this.onResize}
-                        handleWrapperClass={handleWrapperClasses}
-                        handleClasses={{ bottom: "mx_RoomSublist_resizerHandle" }}
-                        className="mx_RoomSublist_resizeBox"
-                        enable={handles}
-                    >
-                        <div className="mx_RoomSublist_tiles" ref={this.tilesRef}>
-                            {visibleTiles}
-                        </div>
-                        {showNButton}
-                    </Resizable>
+                    <div className="mx_RoomSublist_tiles" ref={this.tilesRef}>
+                        {visibleTiles}
+                    </div>
                 </React.Fragment>
             );
         } else if (this.props.showSkeleton && this.state.isExpanded) {
@@ -731,7 +405,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                 aria-labelledby={getLabelId(this.props.tagId)}
                 onKeyDown={this.onKeyDown}
             >
-                {this.renderHeader()}
                 {content}
             </div>
         );
