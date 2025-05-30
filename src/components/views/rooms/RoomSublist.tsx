@@ -379,11 +379,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         this.forceUpdate();
     };
 
-    private onMessagePreviewChanged = (): void => {
-        this.layout.showPreviews = !this.layout.showPreviews;
-        this.forceUpdate(); // because the layout doesn't trigger a re-render
-    };
-
     private onBadgeClick = (ev: React.MouseEvent): void => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -509,7 +504,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                     <RoomTile
                         room={room}
                         key={`room-${room.roomId}`}
-                        showMessagePreview={this.layout.showPreviews}
                         isMinimized={this.props.isMinimized}
                         tag={this.props.tagId}
                     />,
@@ -555,13 +549,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                                 checked={isUnreadFirst}
                             >
                                 {_t("room_list|sort_unread_first")}
-                            </StyledMenuItemCheckbox>
-                            <StyledMenuItemCheckbox
-                                onClose={this.onCloseMenu}
-                                onChange={this.onMessagePreviewChanged}
-                                checked={this.layout.showPreviews}
-                            >
-                                {_t("room_list|show_previews")}
                             </StyledMenuItemCheckbox>
                         </fieldset>
                     </React.Fragment>

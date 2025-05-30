@@ -47,7 +47,6 @@ import SettingsStore from "../../../settings/SettingsStore";
 
 interface Props {
     room: Room;
-    showMessagePreview: boolean;
     isMinimized: boolean;
     tag: TagID;
 }
@@ -117,13 +116,12 @@ class RoomTile extends React.PureComponent<Props, State> {
     }
 
     private get showMessagePreview(): boolean {
-        return !this.props.isMinimized && this.props.showMessagePreview;
+        return !this.props.isMinimized;
     }
 
     public componentDidUpdate(prevProps: Readonly<Props>, prevState: Readonly<State>): void {
-        const showMessageChanged = prevProps.showMessagePreview !== this.props.showMessagePreview;
         const minimizedChanged = prevProps.isMinimized !== this.props.isMinimized;
-        if (showMessageChanged || minimizedChanged) {
+        if (minimizedChanged) {
             this.generatePreview();
         }
         if (prevProps.room?.roomId !== this.props.room?.roomId) {
@@ -305,13 +303,6 @@ class RoomTile extends React.PureComponent<Props, State> {
 
         return (
             <React.Fragment>
-                <ContextMenuTooltipButton
-                    className={classes}
-                    onClick={this.onNotificationsMenuOpenClick}
-                    title={_t("room_list|notification_options")}
-                    isExpanded={!!this.state.notificationsMenuPosition}
-                    tabIndex={isActive ? 0 : -1}
-                />
                 {this.state.notificationsMenuPosition && (
                     <RoomNotificationContextMenu
                         {...contextMenuBelow(this.state.notificationsMenuPosition)}
@@ -327,12 +318,6 @@ class RoomTile extends React.PureComponent<Props, State> {
         if (!this.showContextMenu) return null; // no menu to show
         return (
             <React.Fragment>
-                <ContextMenuTooltipButton
-                    className="mx_RoomTile_menuButton"
-                    onClick={this.onGeneralMenuOpenClick}
-                    title={_t("room|context_menu|title")}
-                    isExpanded={!!this.state.generalMenuPosition}
-                />
                 {this.state.generalMenuPosition && (
                     <RoomGeneralContextMenu
                         {...contextMenuBelow(this.state.generalMenuPosition)}
@@ -368,7 +353,7 @@ class RoomTile extends React.PureComponent<Props, State> {
      * - message previews are enabled and there is a previewable message
      */
     private get shouldRenderSubtitle(): boolean {
-        return !!this.state.call || (this.props.showMessagePreview && !!this.state.messagePreview);
+        return !!this.state.call || !!this.state.messagePreview;
     }
 
     public render(): React.ReactElement {
@@ -401,7 +386,6 @@ class RoomTile extends React.PureComponent<Props, State> {
                 call={this.state.call}
                 messagePreview={this.state.messagePreview}
                 roomId={this.props.room.roomId}
-                showMessagePreview={this.props.showMessagePreview}
             />
         ) : null;
 
@@ -464,7 +448,7 @@ class RoomTile extends React.PureComponent<Props, State> {
                         >
                             <DecoratedRoomAvatar
                                 room={this.props.room}
-                                size="32px"
+                                size="50px"
                                 displayBadge={this.props.isMinimized}
                                 tooltipProps={{ tabIndex: isActive ? 0 : -1 }}
                             />

@@ -8,13 +8,14 @@ Please see LICENSE files in the repository root for full details.
 
 /* Note: the room tile expects to be in a flexbox column container */
 .mx_RoomTile {
-    margin-bottom: 4px;
-    padding: 4px;
+    padding: 10px;
 
     /* The tile is also a flexbox row itself */
     display: flex;
     contain: content; /* Not strict as it will break when resizing a sublist vertically */
     box-sizing: border-box;
+
+    align-items: center;
 
     font-size: var(--cpd-font-size-body-sm);
 
@@ -23,7 +24,6 @@ Please see LICENSE files in the repository root for full details.
     &:focus-within,
     &.mx_RoomTile_hasMenuOpen {
         background-color: $panel-actions;
-        border-radius: 8px;
     }
 
     .mx_DecoratedRoomAvatar,
@@ -36,10 +36,11 @@ Please see LICENSE files in the repository root for full details.
     }
 
     .mx_RoomTile_titleContainer {
-        height: 32px;
+        height: 54.5px;
         min-width: 0;
         flex-basis: 0;
         flex-grow: 1;
+        gap: 2px;
         margin-right: 8px; /* spacing to buttons/badges */
 
         /* Create a new column layout flexbox for the title parts */
@@ -64,9 +65,20 @@ Please see LICENSE files in the repository root for full details.
             white-space: nowrap;
         }
 
+        .mx_RoomTile_subtitle_text {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            height: 32.5px;
+            flex-shrink: 0;
+            width: 100%;
+            white-space: normal;
+        }
+
         .mx_RoomTile_title {
             font: var(--cpd-font-body-md-regular);
             line-height: 1.25;
+            font-weight: 500;
 
             &.mx_RoomTile_titleHasUnreadEvents {
                 font-weight: var(--cpd-font-weight-semibold);

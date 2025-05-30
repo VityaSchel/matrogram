@@ -18,12 +18,11 @@ interface Props {
     call: Call | null;
     messagePreview: MessagePreview | null;
     roomId: string;
-    showMessagePreview: boolean;
 }
 
 const messagePreviewId = (roomId: string): string => `mx_RoomTile_messagePreview_${roomId}`;
 
-export const RoomTileSubtitle: React.FC<Props> = ({ call, messagePreview, roomId, showMessagePreview }) => {
+export const RoomTileSubtitle: React.FC<Props> = ({ call, messagePreview, roomId }) => {
     if (call) {
         return (
             <div className="mx_RoomTile_subtitle">
@@ -32,7 +31,7 @@ export const RoomTileSubtitle: React.FC<Props> = ({ call, messagePreview, roomId
         );
     }
 
-    if (showMessagePreview && messagePreview) {
+    if (messagePreview) {
         const className = classNames("mx_RoomTile_subtitle", {
             "mx_RoomTile_subtitle--thread-reply": messagePreview.isThreadReply,
         });
