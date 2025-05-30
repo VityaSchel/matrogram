@@ -8,51 +8,53 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { type JSX, createRef, useContext } from "react";
 import {
     EventStatus,
+    EventType,
+    M_POLL_START,
     type MatrixEvent,
     MatrixEventEvent,
-    RoomMemberEvent,
-    EventType,
     RelationType,
     type Relations,
+    RoomMemberEvent,
     Thread,
-    M_POLL_START,
 } from "matrix-js-sdk/src/matrix";
+import React, { type JSX, createRef, useContext } from "react";
 
-import { MatrixClientPeg } from "../../../MatrixClientPeg";
-import dis from "../../../dispatcher/dispatcher";
-import { _t } from "../../../languageHandler";
-import Modal from "../../../Modal";
-import Resend from "../../../Resend";
-import SettingsStore from "../../../settings/SettingsStore";
-import { isUrlPermitted } from "../../../HtmlUtils";
-import { canEditContent, editEvent, isContentActionable } from "../../../utils/EventUtils";
-import IconizedContextMenu, { IconizedContextMenuOption, IconizedContextMenuOptionList } from "./IconizedContextMenu";
-import { Action } from "../../../dispatcher/actions";
-import { type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
-import { type ButtonEvent } from "../elements/AccessibleButton";
-import { copyPlaintext, getSelectedText } from "../../../utils/strings";
-import ContextMenu, { toRightOf, type MenuProps } from "../../structures/ContextMenu";
-import ReactionPicker from "../emojipicker/ReactionPicker";
-import ViewSource from "../../structures/ViewSource";
-import { createRedactEventDialog } from "../dialogs/ConfirmRedactDialog";
-import { ShareDialog } from "../dialogs/ShareDialog";
 import RoomContext, { TimelineRenderingType } from "../../../contexts/RoomContext";
-import EndPollDialog from "../dialogs/EndPollDialog";
-import { isPollEnded } from "../messages/MPollBody";
-import { type ViewRoomPayload } from "../../../dispatcher/payloads/ViewRoomPayload";
-import { type GetRelationsForEvent, type IEventTileOps } from "../rooms/EventTile";
+import { Action } from "../../../dispatcher/actions";
+import dis from "../../../dispatcher/dispatcher";
 import { type OpenForwardDialogPayload } from "../../../dispatcher/payloads/OpenForwardDialogPayload";
 import { type OpenReportEventDialogPayload } from "../../../dispatcher/payloads/OpenReportEventDialogPayload";
-import { createMapSiteLinkFromEvent } from "../../../utils/location";
+import { type ShowThreadPayload } from "../../../dispatcher/payloads/ShowThreadPayload";
+import { type ViewRoomPayload } from "../../../dispatcher/payloads/ViewRoomPayload";
 import { getForwardableEvent } from "../../../events/forward/getForwardableEvent";
 import { getShareableLocationEvent } from "../../../events/location/getShareableLocationEvent";
-import { type ShowThreadPayload } from "../../../dispatcher/payloads/ShowThreadPayload";
-import { CardContext } from "../right_panel/context";
-import PinningUtils from "../../../utils/PinningUtils";
+import { isUrlPermitted } from "../../../HtmlUtils";
+import { _t } from "../../../languageHandler";
+import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import Modal from "../../../Modal";
 import PosthogTrackers from "../../../PosthogTrackers.ts";
+import Resend from "../../../Resend";
+import SettingsStore from "../../../settings/SettingsStore";
+import { canEditContent, editEvent, isContentActionable } from "../../../utils/EventUtils";
+import { createMapSiteLinkFromEvent } from "../../../utils/location";
+import { type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
+import PinningUtils from "../../../utils/PinningUtils";
+import { reactToMessage } from "../../../utils/Reaction.ts";
+import { copyPlaintext, getSelectedText } from "../../../utils/strings";
+import ContextMenu, { ChevronFace, type MenuProps, toRightOf } from "../../structures/ContextMenu";
+import ViewSource from "../../structures/ViewSource";
+import { createRedactEventDialog } from "../dialogs/ConfirmRedactDialog";
+import EndPollDialog from "../dialogs/EndPollDialog";
+import { ShareDialog } from "../dialogs/ShareDialog";
+import { type ButtonEvent } from "../elements/AccessibleButton";
+import QuickReactions from "../emojipicker/QuickReactions.tsx";
+import ReactionPicker from "../emojipicker/ReactionPicker";
+import { isPollEnded } from "../messages/MPollBody";
+import { CardContext } from "../right_panel/context";
+import { type GetRelationsForEvent, type IEventTileOps } from "../rooms/EventTile";
+import IconizedContextMenu, { IconizedContextMenuOption, IconizedContextMenuOptionList } from "./IconizedContextMenu";
 
 interface IReplyInThreadButton {
     mxEvent: MatrixEvent;
@@ -679,13 +681,50 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
             const buttonRect = (this.reactButtonRef.current as HTMLElement)?.getBoundingClientRect();
             reactionPicker = (
                 <ContextMenu {...toRightOf(buttonRect)} onFinished={this.closeMenu} managed={false}>
-                    <ReactionPicker mxEvent={mxEvent} onFinished={this.onCloseReactionPicker} reactions={reactions} />
+                    <ReactionPicker
+                        onChoose={(reaction) => {
+                            this.onCloseReactionPicker();
+                            return reactToMessage({ mxEvent, reaction, roomContext: this.context, reactions });
+                        }}
+                        onFinished={this.onCloseReactionPicker}
+                        reactions={reactions}
+                    />
+                </ContextMenu>
+            );
+        }
+
+        let quickReactions: JSX.Element | undefined;
+        if (reactButton) {
+            quickReactions = (
+                <ContextMenu
+                    top={other.top ? other.top - 40 - 8 : undefined}
+                    left={other.left}
+                    bottom={other.bottom ? other.bottom - 40 - 8 : undefined}
+                    chevronFace={ChevronFace.None}
+                    onFinished={this.closeMenu}
+                    managed={false}
+                    hasBackground={false}
+                    menuClassName="mx_EmojiPicker_quick_menu"
+                    zIndex={6000}
+                >
+                    <QuickReactions
+                        onClick={(_, emoji) => {
+                            this.onCloseReactionPicker();
+                            return reactToMessage({
+                                mxEvent,
+                                reaction: emoji.unicode,
+                                roomContext: this.context,
+                                reactions,
+                            });
+                        }}
+                    />
                 </ContextMenu>
             );
         }
 
         return (
             <React.Fragment>
+                {quickReactions}
                 <IconizedContextMenu
                     {...other}
                     className="mx_MessageContextMenu"

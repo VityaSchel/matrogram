@@ -16,7 +16,6 @@ import AutoHideScrollbar from "../../structures/AutoHideScrollbar";
 import Header from "./Header";
 import Search from "./Search";
 import Preview from "./Preview";
-import QuickReactions from "./QuickReactions";
 import Category, { type CategoryKey, type ICategory } from "./Category";
 import { filterBoolean } from "../../../utils/arrays";
 import {
@@ -392,13 +391,8 @@ class EmojiPicker extends React.Component<IProps, IState> {
                                     return categoryElement;
                                 })}
                             </AutoHideScrollbar>
-                            {this.state.previewEmoji ? (
+                            {this.state.previewEmoji && (
                                 <Preview emoji={this.state.previewEmoji} />
-                            ) : (
-                                <QuickReactions
-                                    onClick={this.onClickEmoji}
-                                    selectedEmojis={this.props.selectedEmojis}
-                                />
                             )}
                         </section>
                     );

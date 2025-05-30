@@ -214,7 +214,6 @@ Please see LICENSE files in the repository root for full details.
 }
 
 .mx_EmojiPicker_footer {
-    border-top: 1px solid $message-action-bar-border-color;
     min-height: 72px;
 
     display: flex;
@@ -250,9 +249,17 @@ Please see LICENSE files in the repository root for full details.
     }
 }
 
+.mx_EmojiPicker_quick_menu {
+    overflow: clip;
+}
+
 .mx_EmojiPicker_quick {
     flex-direction: column;
     justify-content: space-around;
+
+    .mx_EmojiPicker_item {
+        border-radius: 0;
+    }
 }
 
 .mx_EmojiPicker_quick_header .mx_EmojiPicker_name {
