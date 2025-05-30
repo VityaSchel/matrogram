@@ -403,7 +403,7 @@ export class MImageBodyInner extends React.Component<IProps, IState> {
 
         return (
             <span className="mx_MImageBody_banner">
-                {presentableTextForFile(content, _t("common|image"), true, true)}
+                {presentableTextForFile(content, _t("common|image"))}
             </span>
         );
     }

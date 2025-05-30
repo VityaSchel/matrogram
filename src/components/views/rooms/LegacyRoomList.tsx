@@ -137,7 +137,7 @@ export default class LegacyRoomList extends React.PureComponent<IProps, IState> 
         const lists = RoomListStore.instance.orderedLists;
         const rooms: Room[] = [];
         TAG_ORDER.forEach((t) => {
-            let listRooms = t.map(k => lists[k]).flat().sort((a, b) => b.getLastActiveTimestamp() - a.getLastActiveTimestamp());
+            let listRooms = t.map(k => lists[k]).flat().sort((a, b) => b.getLast() - a.getLastActiveTimestamp());
 
             if (unread) {
                 // filter to only notification rooms (and our current active room so we can index properly)

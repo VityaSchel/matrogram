@@ -41,7 +41,7 @@ Please see LICENSE files in the repository root for full details.
         flex-basis: 0;
         flex-grow: 1;
         gap: 2px;
-        margin-right: 16px; /* spacing to buttons/badges */
+        margin-right: 24px; /* spacing to buttons/badges */
 
         /* Create a new column layout flexbox for the title parts */
         display: flex;
@@ -81,14 +81,28 @@ Please see LICENSE files in the repository root for full details.
             font-weight: 500;
             font-size: 13px;
             letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
 
             &.mx_RoomTile_titleHasUnreadEvents {
                 font-weight: var(--cpd-font-weight-semibold);
+            }
+
+            span {
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         }
 
         .mx_RoomTile_titleWithSubtitle {
             margin-top: -2px; /* shift the title up a bit more */
+            margin-right: 8px;
+        }
+
+        .mx_RoomTile_noNotifications {
+            flex-shrink: 0;
+            color: $secondary-content;
         }
     }
 
@@ -118,6 +132,14 @@ Please see LICENSE files in the repository root for full details.
         position: absolute;
         height: 16px;
         bottom: 14px;
+    }
+
+    .mx_RoomTile_timestamp {
+        position: absolute;
+        right: 10px;
+        top: 9px;
+        font-size: 12px;
+        color: $secondary-content;
     }
 
     .mx_RoomTile_badgeContainer ~ .mx__RoomTile_pinIcon {

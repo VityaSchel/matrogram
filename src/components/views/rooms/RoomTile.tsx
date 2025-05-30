@@ -11,7 +11,7 @@ import React, { createRef } from "react";
 import { type Room, RoomEvent } from "matrix-js-sdk/src/matrix";
 import { KnownMembership } from "matrix-js-sdk/src/types";
 import classNames from "classnames";
-import { PinIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
+import { NotificationsOffIcon, PinIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import type { Call } from "../../../models/Call";
 import { RovingTabIndexWrapper } from "../../../accessibility/RovingTabIndex";
@@ -44,6 +44,7 @@ import { shouldShowComponent } from "../../../customisations/helpers/UIComponent
 import { UIComponent } from "../../../settings/UIFeature";
 import { isKnockDenied } from "../../../utils/membership";
 import SettingsStore from "../../../settings/SettingsStore";
+import { formatTime } from "../../../DateUtils";
 
 interface Props {
     room: Room;
@@ -59,6 +60,7 @@ interface State {
     generalMenuPosition: PartialDOMRect | null;
     call: Call | null;
     messagePreview: MessagePreview | null;
+    timestamp: number;
 }
 
 const messagePreviewId = (roomId: string): string => `mx_RoomTile_messagePreview_${roomId}`;
@@ -87,6 +89,7 @@ class RoomTile extends React.PureComponent<Props, State> {
             call: CallStore.instance.getCall(this.props.room.roomId),
             // generatePreview() will return nothing if the user has previews disabled
             messagePreview: null,
+            timestamp: this.props.room.getLastActiveTimestamp()
         };
 
         this.notificationState = RoomNotificationStateStore.instance.getRoomState(this.props.room);
@@ -209,7 +212,7 @@ class RoomTile extends React.PureComponent<Props, State> {
                 messagePreview.text = messagePreview.text.substring(prefix.length);
             }
         }
-        this.setState({ messagePreview });
+        this.setState({ messagePreview, timestamp: this.props.room.getLastActiveTimestamp() });
     }
 
     private scrollIntoView = (): void => {
@@ -346,6 +349,12 @@ class RoomTile extends React.PureComponent<Props, State> {
         if (typeof name !== "string") name = "";
         name = name.replace(":", ":\u200b"); // add a zero-width space to allow linewrapping after the colon
 
+        const timestamp = this.props.isMinimized ? null : (
+            <div className="mx_RoomTile_timestamp">
+                {formatTime(new Date(this.state.timestamp))}
+            </div>
+        );
+
         let badge: React.ReactNode;
         if (!this.props.isMinimized && this.notificationState) {
             // aria-hidden because we summarise the unread count/highlight status in a manual aria-label below
@@ -383,6 +392,9 @@ class RoomTile extends React.PureComponent<Props, State> {
             <div className="mx_RoomTile_titleContainer">
                 <div title={name} className={titleClasses} tabIndex={-1}>
                     <span dir="auto">{name}</span>
+                    {this.notificationState.muted && (
+                        <NotificationsOffIcon className="mx_RoomTile_noNotifications" />
+                    )}
                 </div>
                 {subtitle}
             </div>
@@ -439,6 +451,7 @@ class RoomTile extends React.PureComponent<Props, State> {
                             {titleContainer}
                             {badge}
                             {pinIcon}
+                            {timestamp}
                             {this.renderGeneralMenu()}
                             {this.renderNotificationsMenu(isActive)}
                         </AccessibleButton>
