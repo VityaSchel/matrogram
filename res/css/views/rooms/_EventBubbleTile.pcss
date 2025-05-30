@@ -29,6 +29,11 @@ Please see LICENSE files in the repository root for full details.
 
     margin-inline-start: var(--EventTile_bubble-margin-inline-start);
     margin-inline-end: var(--EventTile_bubble-margin-inline-end);
+
+    &[data-self="true"] {
+        --EventTile_bubble-margin-inline-end: 0px;
+        --EventTile_bubble_line-margin-inline-end: 0px;
+    }
 }
 
 .mx_EventTile[data-layout="bubble"] {
@@ -188,7 +193,7 @@ Please see LICENSE files in the repository root for full details.
         }
 
         .mx_EventTile_avatar {
-            left: -36px;
+            right: calc(100% + 13px);
         }
 
         .mx_MessageActionBar {
@@ -256,8 +261,7 @@ Please see LICENSE files in the repository root for full details.
         }
 
         .mx_EventTile_avatar {
-            top: -19px; /* height of the sender block */
-            right: -38px;
+            display: none;
         }
 
         .mx_MediaBody {
@@ -418,12 +422,6 @@ Please see LICENSE files in the repository root for full details.
         .mx_MLocationBody_map,
         .mx_MBeaconBody {
             border-bottom-right-radius: var(--cornerRadius);
-        }
-    }
-
-    &.mx_EventTile_noSender {
-        .mx_EventTile_avatar {
-            top: -19px;
         }
     }
 
