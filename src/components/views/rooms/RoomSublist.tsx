@@ -10,8 +10,7 @@ Please see LICENSE files in the repository root for full details.
 
 import { type Room } from "matrix-js-sdk/src/matrix";
 import classNames from "classnames";
-import { type Enable } from "re-resizable";
-import React, { type JSX, type ComponentType, createRef, type ReactComponentElement } from "react";
+import React, { type JSX, createRef, type ReactComponentElement } from "react";
 
 import { polyfillTouchEvent } from "../../../@types/polyfill";
 import { KeyBindingAction } from "../../../accessibility/KeyboardShortcuts";
@@ -19,10 +18,7 @@ import { Action } from "../../../dispatcher/actions";
 import defaultDispatcher, { type MatrixDispatcher } from "../../../dispatcher/dispatcher";
 import { type ActionPayload } from "../../../dispatcher/payloads";
 import { getKeyBindingsManager } from "../../../KeyBindingsManager";
-import { ListAlgorithm, SortAlgorithm } from "../../../stores/room-list/algorithms/models";
-import { type ListLayout } from "../../../stores/room-list/ListLayout";
 import { DefaultTagID, type TagID } from "../../../stores/room-list/models";
-import RoomListLayoutStore from "../../../stores/room-list/RoomListLayoutStore";
 import RoomListStore, { LISTS_UPDATE_EVENT, LISTS_LOADING_EVENT } from "../../../stores/room-list/RoomListStore";
 import { arrayFastClone, arrayHasOrderChange } from "../../../utils/arrays";
 import { objectExcluding, objectHasDiff } from "../../../utils/objects";
@@ -30,11 +26,7 @@ import type ResizeNotifier from "../../../utils/ResizeNotifier";
 import type ExtraTile from "./ExtraTile";
 import RoomTile from "./RoomTile";
 
-const SHOW_N_BUTTON_HEIGHT = 28; // As defined by CSS
-const RESIZE_HANDLE_HEIGHT = 4; // As defined by CSS
 export const HEADER_HEIGHT = 32; // As defined by CSS
-
-const MAX_PADDING_HEIGHT = SHOW_N_BUTTON_HEIGHT + RESIZE_HANDLE_HEIGHT;
 
 // HACK: We really shouldn't have to do this.
 polyfillTouchEvent();
@@ -46,27 +38,18 @@ export interface IAuxButtonProps {
 
 interface IProps {
     forRooms: boolean;
-    startAsHidden: boolean;
-    label: string;
-    AuxButtonComponent?: ComponentType<IAuxButtonProps>;
     isMinimized: boolean;
-    tagId: TagID;
     showSkeleton?: boolean;
     alwaysVisible?: boolean;
     forceExpanded?: boolean;
     resizeNotifier: ResizeNotifier;
     extraTiles?: ReactComponentElement<typeof ExtraTile>[] | null;
     onListCollapse?: (isExpanded: boolean) => void;
-}
-
-function getLabelId(tagId: TagID): string {
-    return `mx_RoomSublist_label_${tagId}`;
+    tagIds: TagID[];
 }
 
 interface IState {
-    isResizing: boolean;
     isExpanded: boolean; // used for the for expand of the sublist when the room list is being filtered
-    height: number;
     rooms: Room[];
     roomsLoading: boolean;
 }
@@ -76,46 +59,21 @@ export default class RoomSublist extends React.Component<IProps, IState> {
     private sublistRef = createRef<HTMLDivElement>();
     private tilesRef = createRef<HTMLDivElement>();
     private dispatcherRef?: string;
-    private layout: ListLayout;
 
     public constructor(props: IProps) {
         super(props);
 
-        this.layout = RoomListLayoutStore.instance.getLayoutFor(this.props.tagId);
         this.state = {
-            isResizing: false,
-            isExpanded: !this.layout.isCollapsed,
-            height: 0, // to be fixed in a moment, we need `rooms` to calculate this.
-            rooms: arrayFastClone(RoomListStore.instance.orderedLists[this.props.tagId] || []),
+            isExpanded: true,
+            rooms: this.getRooms(props.tagIds),
             roomsLoading: false,
         };
-        // Why Object.assign() and not this.state.height? Because TypeScript says no.
-        this.state = Object.assign(this.state, { height: this.calculateInitialHeight() });
     }
 
-    private calculateInitialHeight(): number {
-        const requestedVisibleTiles = Math.max(Math.floor(this.layout.visibleTiles), this.layout.minVisibleTiles);
-        const tileCount = Math.min(this.numTiles, requestedVisibleTiles);
-        return this.layout.tilesToPixelsWithPadding(tileCount, this.padding);
-    }
-
-    private get padding(): number {
-        let padding = RESIZE_HANDLE_HEIGHT;
-        // this is used for calculating the max height of the whole container,
-        // and takes into account whether there should be room reserved for the show more/less button
-        // when fully expanded. We can't rely purely on the layout's defaultVisible tile count
-        // because there are conditions in which we need to know that the 'show more' button
-        // is present while well under the default tile limit.
-        const needsShowMore = this.numTiles > this.numVisibleTiles;
-
-        // ...but also check this or we'll miss if the section is expanded and we need a
-        // 'show less'
-        const needsShowLess = this.numTiles > this.layout.defaultVisibleTiles;
-
-        if (needsShowMore || needsShowLess) {
-            padding += SHOW_N_BUTTON_HEIGHT;
-        }
-        return padding;
+    private getRooms(tagIds: TagID[]): Room[] {
+        const lists = RoomListStore.instance.orderedLists
+        const rooms = tagIds.map(k => arrayFastClone(lists[k] || [])).flat()
+        return rooms.sort((a, b) => b.getLastActiveTimestamp() - a.getLastActiveTimestamp());
     }
 
     private get extraTiles(): ReactComponentElement<typeof ExtraTile>[] | null {
@@ -131,17 +89,8 @@ export default class RoomSublist extends React.Component<IProps, IState> {
     }
 
     private get numVisibleTiles(): number {
-        const nVisible = Math.ceil(this.layout.visibleTiles);
+        const nVisible = 50;
         return Math.min(nVisible, this.numTiles);
-    }
-
-    public componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>): void {
-        const prevExtraTiles = prevProps.extraTiles;
-        // as the rooms can come in one by one we need to reevaluate
-        // the amount of available rooms to cap the amount of requested visible rooms by the layout
-        if (RoomSublist.calcNumTiles(prevState.rooms, prevExtraTiles) !== this.numTiles) {
-            this.setState({ height: this.calculateInitialHeight() });
-        }
     }
 
     public shouldComponentUpdate(nextProps: Readonly<IProps>, nextState: Readonly<IState>): boolean {
@@ -218,9 +167,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
     }
 
     private onListsLoading = (tagId: TagID, isLoading: boolean): void => {
-        if (this.props.tagId !== tagId) {
-            return;
-        }
         this.setState({
             roomsLoading: isLoading,
         });
@@ -230,29 +176,13 @@ export default class RoomSublist extends React.Component<IProps, IState> {
         const stateUpdates = {} as IState;
 
         const currentRooms = this.state.rooms;
-        const newRooms = arrayFastClone(RoomListStore.instance.orderedLists[this.props.tagId] || []);
+        const newRooms = this.getRooms(this.props.tagIds);
         if (arrayHasOrderChange(currentRooms, newRooms)) {
             stateUpdates.rooms = newRooms;
         }
 
         if (Object.keys(stateUpdates).length > 0) {
             this.setState(stateUpdates);
-        }
-
-        let forceUpdate = false;
-        if (RoomListStore.instance.getTagSorting(this.props.tagId) !== SortAlgorithm.Recent) {
-            RoomListStore.instance.setTagSorting(this.props.tagId, SortAlgorithm.Recent);
-            forceUpdate = true;
-        }
-
-        if (this.props.tagId !== DefaultTagID.Invite && RoomListStore.instance.getListOrder(this.props.tagId) !== ListAlgorithm.Natural) {
-            RoomListStore.instance.setListOrder(this.props.tagId, ListAlgorithm.Natural);
-            forceUpdate = true;
-        }
-
-        if (forceUpdate) {
-            this.forceUpdate();
-
         }
     };
 
@@ -263,24 +193,11 @@ export default class RoomSublist extends React.Component<IProps, IState> {
             setTimeout(() => {
                 const roomIndex = this.state.rooms.findIndex((r) => r.roomId === payload.room_id);
 
-                if (!this.state.isExpanded && roomIndex > -1) {
-                    this.toggleCollapsed();
-                }
                 // extend the visible section to include the room if it is entirely invisible
                 if (roomIndex >= this.numVisibleTiles) {
-                    this.layout.visibleTiles = this.layout.tilesWithPadding(roomIndex + 1, MAX_PADDING_HEIGHT);
                     this.forceUpdate(); // because the layout doesn't trigger a re-render
                 }
             }, 0);
-        }
-    };
-
-    private toggleCollapsed = (): void => {
-        if (this.props.forceExpanded) return;
-        this.layout.isCollapsed = this.state.isExpanded;
-        this.setState({ isExpanded: !this.layout.isCollapsed });
-        if (this.props.onListCollapse) {
-            this.props.onListCollapse(!this.layout.isCollapsed);
         }
     };
 
@@ -318,7 +235,7 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                         room={room}
                         key={`room-${room.roomId}`}
                         isMinimized={this.props.isMinimized}
-                        tag={this.props.tagId}
+                        tag={DefaultTagID.DM}
                     />,
                 );
             }
@@ -367,24 +284,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                 </div>
             );
         } else if (visibleTiles.length > 0) {
-            const layout = this.layout; // to shorten calls
-
-            // Figure out if we need a handle
-            const handles: Enable = {
-                bottom: true, // the only one we need, but the others must be explicitly false
-                bottomLeft: false,
-                bottomRight: false,
-                left: false,
-                right: false,
-                top: false,
-                topLeft: false,
-                topRight: false,
-            };
-            if (layout.visibleTiles >= this.numTiles && this.numTiles <= layout.minVisibleTiles) {
-                // we're at a minimum, don't have a bottom handle
-                handles.bottom = false;
-            }
-
             content = (
                 <React.Fragment>
                     <div className="mx_RoomSublist_tiles" ref={this.tilesRef}>
@@ -402,7 +301,6 @@ export default class RoomSublist extends React.Component<IProps, IState> {
                 className={classes}
                 role="group"
                 aria-hidden={hidden}
-                aria-labelledby={getLabelId(this.props.tagId)}
                 onKeyDown={this.onKeyDown}
             >
                 {content}

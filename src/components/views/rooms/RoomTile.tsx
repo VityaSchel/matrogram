@@ -11,6 +11,7 @@ import React, { createRef } from "react";
 import { type Room, RoomEvent } from "matrix-js-sdk/src/matrix";
 import { KnownMembership } from "matrix-js-sdk/src/types";
 import classNames from "classnames";
+import { PinIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import type { Call } from "../../../models/Call";
 import { RovingTabIndexWrapper } from "../../../accessibility/RovingTabIndex";
@@ -18,11 +19,10 @@ import AccessibleButton, { type ButtonEvent } from "../../views/elements/Accessi
 import defaultDispatcher from "../../../dispatcher/dispatcher";
 import { Action } from "../../../dispatcher/actions";
 import { _t } from "../../../languageHandler";
-import { ChevronFace, ContextMenuTooltipButton, type MenuProps } from "../../structures/ContextMenu";
+import { ChevronFace, type MenuProps } from "../../structures/ContextMenu";
 import { DefaultTagID, type TagID } from "../../../stores/room-list/models";
 import { type MessagePreview, MessagePreviewStore } from "../../../stores/room-list/MessagePreviewStore";
 import DecoratedRoomAvatar from "../avatars/DecoratedRoomAvatar";
-import { RoomNotifState } from "../../../RoomNotifs";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import { RoomNotificationContextMenu } from "../context_menus/RoomNotificationContextMenu";
 import NotificationBadge from "./NotificationBadge";
@@ -202,8 +202,13 @@ class RoomTile extends React.PureComponent<Props, State> {
             return;
         }
 
-        const messagePreview =
-            (await MessagePreviewStore.instance.getPreviewForRoom(this.props.room, this.props.tag)) ?? null;
+        const messagePreview = await MessagePreviewStore.instance.getPreviewForRoom(this.props.room, this.props.tag);
+        if (messagePreview !== null) {
+            const prefix = this.props.room.name + ":";
+            if(messagePreview.text.startsWith(prefix)) {
+                messagePreview.text = messagePreview.text.substring(prefix.length);
+            }
+        }
         this.setState({ messagePreview });
     }
 
@@ -238,24 +243,8 @@ class RoomTile extends React.PureComponent<Props, State> {
         this.setState({ selected: isActive });
     };
 
-    private onNotificationsMenuOpenClick = (ev: ButtonEvent): void => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        const target = ev.target as HTMLButtonElement;
-        this.setState({ notificationsMenuPosition: target.getBoundingClientRect() });
-
-        PosthogTrackers.trackInteraction("WebRoomListRoomTileNotificationsMenu", ev);
-    };
-
     private onCloseNotificationsMenu = (): void => {
         this.setState({ notificationsMenuPosition: null });
-    };
-
-    private onGeneralMenuOpenClick = (ev: ButtonEvent): void => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        const target = ev.target as HTMLButtonElement;
-        this.setState({ generalMenuPosition: target.getBoundingClientRect() });
     };
 
     private onContextMenu = (ev: React.MouseEvent): void => {
@@ -286,20 +275,6 @@ class RoomTile extends React.PureComponent<Props, State> {
             // the menu makes no sense in these cases so do not show one
             return null;
         }
-
-        const state = this.roomProps.notificationVolume;
-
-        const classes = classNames("mx_RoomTile_notificationsButton", {
-            // Show bell icon for the default case too.
-            mx_RoomNotificationContextMenu_iconBell: state === RoomNotifState.AllMessages,
-            mx_RoomNotificationContextMenu_iconBellDot: state === RoomNotifState.AllMessagesLoud,
-            mx_RoomNotificationContextMenu_iconBellMentions: state === RoomNotifState.MentionsOnly,
-            mx_RoomNotificationContextMenu_iconBellCrossed: state === RoomNotifState.Mute,
-
-            // Only show the icon by default if the room is overridden to muted.
-            // TODO: [FTUE Notifications] Probably need to detect global mute state
-            mx_RoomTile_notificationsButton_show: state === RoomNotifState.Mute,
-        });
 
         return (
             <React.Fragment>
@@ -381,6 +356,15 @@ class RoomTile extends React.PureComponent<Props, State> {
             );
         }
 
+        let pinIcon: React.JSX.Element;
+        if (Object.keys(this.props.room.tags).includes(DefaultTagID.Favourite) && this.notificationState.count === 0) {
+            pinIcon = (
+                <div className="mx_RoomTile_pinIcon" aria-label="Pinned">
+                    <PinIcon />
+                </div>
+            );
+        }
+
         const subtitle = this.shouldRenderSubtitle ? (
             <RoomTileSubtitle
                 call={this.state.call}
@@ -454,6 +438,7 @@ class RoomTile extends React.PureComponent<Props, State> {
                             />
                             {titleContainer}
                             {badge}
+                            {pinIcon}
                             {this.renderGeneralMenu()}
                             {this.renderNotificationsMenu(isActive)}
                         </AccessibleButton>

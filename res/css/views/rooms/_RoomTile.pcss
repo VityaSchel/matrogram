@@ -41,7 +41,7 @@ Please see LICENSE files in the repository root for full details.
         flex-basis: 0;
         flex-grow: 1;
         gap: 2px;
-        margin-right: 8px; /* spacing to buttons/badges */
+        margin-right: 16px; /* spacing to buttons/badges */
 
         /* Create a new column layout flexbox for the title parts */
         display: flex;
@@ -79,6 +79,8 @@ Please see LICENSE files in the repository root for full details.
             font: var(--cpd-font-body-md-regular);
             line-height: 1.25;
             font-weight: 500;
+            font-size: 13px;
+            letter-spacing: -0.2px;
 
             &.mx_RoomTile_titleHasUnreadEvents {
                 font-weight: var(--cpd-font-weight-semibold);
@@ -95,13 +97,10 @@ Please see LICENSE files in the repository root for full details.
     }
 
     .mx_RoomTile_badgeContainer {
-        height: 16px;
-        /* don't set width so that it takes no space when there is no badge to show */
-        margin: auto 0; /* vertically align */
-
         /* Create a flexbox to make aligning dot badges easier */
         display: flex;
         align-items: center;
+        right: 10px;
 
         .mx_NotificationBadge {
             margin-right: 2px; /* centering */
@@ -112,6 +111,22 @@ Please see LICENSE files in the repository root for full details.
             margin-left: 5px;
             margin-right: 7px;
         }
+    }
+
+    .mx_RoomTile_badgeContainer,
+    .mx_RoomTile_pinIcon {
+        position: absolute;
+        height: 16px;
+        bottom: 14px;
+    }
+
+    .mx_RoomTile_badgeContainer ~ .mx__RoomTile_pinIcon {
+        display: none;
+    }
+
+    .mx_RoomTile_pinIcon {
+        right: 14px;
+        transform: rotate(45deg);
     }
 
     /* The context menu buttons are hidden by default */
@@ -152,13 +167,6 @@ Please see LICENSE files in the repository root for full details.
         &:hover,
         &:focus-within,
         &.mx_RoomTile_hasMenuOpen {
-            /* Hide the badge container on hover because it'll be a menu button */
-            .mx_RoomTile_badgeContainer {
-                width: 0;
-                height: 0;
-                display: none;
-            }
-
             .mx_RoomTile_notificationsButton,
             .mx_RoomTile_menuButton {
                 display: block;
