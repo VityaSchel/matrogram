@@ -189,14 +189,16 @@ export default class MFileBody extends React.Component<IProps, IState> {
                 this.context.timelineRenderingType !== TimelineRenderingType.Search &&
                 this.context.timelineRenderingType !== TimelineRenderingType.Pinned);
 
+        const shortFileName = presentableTextForFile(this.content, { name: true, size: true, short: true }) || _t("common|attachment");
+
         let placeholder: React.ReactNode = null;
         if (showGenericPlaceholder) {
             placeholder = (
                 <AccessibleButton className="mx_MediaBody mx_MFileBody_info" onClick={this.onPlaceholderClick}>
                     <span className="mx_MFileBody_info_icon" />
-                    <TextWithTooltip tooltip={presentableTextForFile(this.content, _t("common|attachment"), true, true)}>
+                    <TextWithTooltip tooltip={presentableTextForFile(this.content, { name: true, size: true }) ||  _t("common|attachment")}>
                         <span className="mx_MFileBody_info_filename">
-                            {presentableTextForFile(this.content, _t("common|attachment"), true, true, true)}
+                            {shortFileName}
                         </span>
                     </TextWithTooltip>
                 </AccessibleButton>
@@ -267,7 +269,7 @@ export default class MFileBody extends React.Component<IProps, IState> {
                          */}
                             <iframe
                                 aria-hidden
-                                title={presentableTextForFile(this.content, _t("common|attachment"), true, true, true)}
+                                title={shortFileName}
                                 src={url}
                                 onLoad={() => this.downloadFile(this.fileName, this.linkText)}
                                 ref={this.iframe}

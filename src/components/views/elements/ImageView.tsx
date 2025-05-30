@@ -516,11 +516,14 @@ export default class ImageView extends React.Component<IProps, IState> {
 
         let title: JSX.Element | undefined;
         if (this.props.mxEvent?.getContent()) {
-            title = (
-                <div className="mx_ImageView_title">
-                    {presentableTextForFile(this.props.mxEvent?.getContent(), _t("common|image"))}
-                </div>
-            );
+            const text = presentableTextForFile(this.props.mxEvent.getContent())
+            if (text) {
+                title = (
+                    <div className="mx_ImageView_title">
+                        {text}
+                    </div>
+                );
+            }
         }
 
         return (

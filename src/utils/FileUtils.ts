@@ -37,33 +37,24 @@ export function downloadLabelForFile(content: MediaEventContent, withSize = true
  * link text.
  *
  * @param {MediaEventContent} content The "content" key of the matrix event.
- * @param {string} fallbackText The fallback text
  * @param {boolean} withFileName Whether to include file name. Default false.
- * @param {boolean} withSize Whether to include size information. Default false.
+ * @param {boolean} size Whether to include size information. Default false.
  * @param {boolean} shortened Ensure the extension of the file name is visible. Default false.
  * @return {string} the human-readable link text for the attachment.
  */
-export function presentableTextForFile(
-    content: MediaEventContent,
-    fallbackText = _t("common|attachment"),
-    withFileName = false,
-    withSize = false,
-    shortened = false,
-): string {
-    let text = fallbackText;
-    if (content.filename?.length) {
-        text = content.filename;
-    } else if (content.body?.length) {
-        // The content body should be the name of the file including a
-        // file extension.
-        text = content.body;
-    }
-
-    if (withFileName) {
+export function presentableTextForFile(content: MediaEventContent, options?: {
+    name?: boolean,
+    size?: boolean,
+    short?: boolean,
+}): string | undefined {
+    let text: string | undefined
+    const { name = false, size = false, short = false } = options || {}
+    if (name && (content.filename || content.body)) {
+        text = content.filename || content.body;
         // We shorten to 15 characters somewhat arbitrarily, and assume most files
         // will have a 3 character (plus full stop) extension. The goal is to knock
         // the label down to 15-25 characters, not perfect accuracy.
-        if (shortened && text.length > 19) {
+        if (short && text.length > 19) {
             const parts = text.split(".");
             let fileName = parts
                 .slice(0, parts.length - 1)
@@ -78,7 +69,7 @@ export function presentableTextForFile(
             text = `${fileName}...${extension}`;
         }
 
-        if (content.info?.size && withSize) {
+        if (content.info?.size && size) {
             // If we know the size of the file then add it as human readable
             // string to the end of the link text so that the user knows how
             // big a file they are downloading.
@@ -88,6 +79,8 @@ export function presentableTextForFile(
             // from the file extension.
             text += " (" + <string>fileSize(content.info.size, { base: 2, standard: "jedec" }) + ")";
         }
+    } else if (content.filename && content.body && content.filename !== content.body) {
+        text = content.body;
     }
     return text;
 }

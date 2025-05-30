@@ -401,11 +401,13 @@ export class MImageBodyInner extends React.Component<IProps, IState> {
             return null;
         }
 
-        return (
+        const text = presentableTextForFile(content)
+
+        return text ? (
             <span className="mx_MImageBody_banner">
-                {presentableTextForFile(content, _t("common|image"))}
+                {text}
             </span>
-        );
+        ) : null;
     }
 
     protected messageContent(

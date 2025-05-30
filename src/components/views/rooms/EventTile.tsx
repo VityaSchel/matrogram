@@ -58,7 +58,6 @@ import MemberAvatar from "../avatars/MemberAvatar";
 import SenderProfile from "../messages/SenderProfile";
 import MessageTimestamp from "../messages/MessageTimestamp";
 import { type IReadReceiptPosition } from "./ReadReceiptMarker";
-import MessageActionBar from "../messages/MessageActionBar";
 import ReactionsRow from "../messages/ReactionsRow";
 import { getEventDisplayInfo } from "../../../utils/EventRenderingUtils";
 import RoomContext, { TimelineRenderingType } from "../../../contexts/RoomContext";
@@ -796,10 +795,6 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
         return null;
     }
 
-    private onActionBarFocusChange = (actionBarFocused: boolean): void => {
-        this.setState({ actionBarFocused });
-    };
-
     private getTile: () => IEventTileType | null = () => this.tile.current;
 
     private getReplyChain = (): ReplyChain | null => this.replyChain.current;
@@ -1092,21 +1087,6 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
             }
         }
 
-        const showMessageActionBar = !isEditing && !this.props.forExport;
-        const actionBar = showMessageActionBar ? (
-            <MessageActionBar
-                mxEvent={this.props.mxEvent}
-                reactions={this.state.reactions}
-                permalinkCreator={this.props.permalinkCreator}
-                getTile={this.getTile}
-                getReplyChain={this.getReplyChain}
-                onFocusChange={this.onActionBarFocusChange}
-                isQuoteExpanded={isQuoteExpanded}
-                toggleThreadExpanded={() => this.setQuoteExpanded(!isQuoteExpanded)}
-                getRelationsForEvent={this.props.getRelationsForEvent}
-            />
-        ) : undefined;
-
         const showTimestamp =
             this.props.mxEvent.getTs() &&
             !this.props.hideTimestamp &&
@@ -1253,7 +1233,6 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                                 },
                                 this.context.showHiddenEvents,
                             )}
-                            {actionBar}
                             <a href={permalink} onClick={this.onPermalinkClicked}>
                                 {timestamp}
                             </a>
@@ -1450,7 +1429,6 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                                 },
                                 this.context.showHiddenEvents,
                             )}
-                            {actionBar}
                             {this.props.layout === Layout.IRC && (
                                 <>
                                     {hasFooter && (
