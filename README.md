@@ -4,6 +4,11 @@ Mastogram is a fork of Element Web (Element Desktop) which focuses on bringing T
 
 Work in progress.
 
+Features:
+- Channels, chats and DMs all share the same list in the sidebar
+- Two line message previews in sidebar
+- Small design changes that simplify interface such as integrated stickers/emoji popup, larger message context menu click area, less buttons
+
 ## Donate
 
 [hloth.dev/donate](https://hloth.dev/doante)

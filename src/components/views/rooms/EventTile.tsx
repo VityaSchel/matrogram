@@ -1208,13 +1208,14 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                         "data-event-id": this.props.mxEvent.getId(),
                         "onMouseEnter": () => this.setState({ hover: true }),
                         "onMouseLeave": () => this.setState({ hover: false }),
+                        "onContextMenu": this.onContextMenu,
                     },
                     [
                         <div className="mx_EventTile_senderDetails" key="mx_EventTile_senderDetails">
                             {avatar}
                             {sender}
                         </div>,
-                        <div className={lineClasses} key="mx_EventTile_line" onContextMenu={this.onContextMenu}>
+                        <div className={lineClasses} key="mx_EventTile_line">
                             {this.renderContextMenu()}
                             {replyChain}
                             {renderTile(
@@ -1346,6 +1347,7 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                         "aria-live": ariaLive,
                         "aria-atomic": true,
                         "data-scroll-tokens": scrollToken,
+                        "onContextMenu": this.onContextMenu,
                     },
                     [
                         <a
@@ -1360,7 +1362,7 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                                 {timestamp}
                             </div>
                         </a>,
-                        <div className={lineClasses} key="mx_EventTile_line" onContextMenu={this.onContextMenu}>
+                        <div className={lineClasses} key="mx_EventTile_line">
                             {this.renderContextMenu()}
                             {renderTile(
                                 TimelineRenderingType.File,
@@ -1401,13 +1403,14 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
                         "data-has-reply": !!replyChain,
                         "onMouseEnter": () => this.setState({ hover: true }),
                         "onMouseLeave": () => this.setState({ hover: false }),
+                        "onContextMenu": this.onContextMenu,
                     },
                     <>
                         {ircTimestamp}
                         {sender}
                         {ircPadlock}
                         {avatar}
-                        <div className={lineClasses} key="mx_EventTile_line" onContextMenu={this.onContextMenu}>
+                        <div className={lineClasses} key="mx_EventTile_line">
                             {this.renderContextMenu()}
                             {groupTimestamp}
                             {groupPadlock}
