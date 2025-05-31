@@ -694,7 +694,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let quickReactions: JSX.Element | undefined;
-        if (reactButton) {
+        if (reactButton && !this.state.reactionPickerDisplayed) {
             quickReactions = (
                 <ContextMenu
                     top={other.top ? other.top - 40 - 8 : undefined}

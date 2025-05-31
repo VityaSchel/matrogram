@@ -391,9 +391,6 @@ class EmojiPicker extends React.Component<IProps, IState> {
                                     return categoryElement;
                                 })}
                             </AutoHideScrollbar>
-                            {this.state.previewEmoji && (
-                                <Preview emoji={this.state.previewEmoji} />
-                            )}
                         </section>
                     );
                 }}

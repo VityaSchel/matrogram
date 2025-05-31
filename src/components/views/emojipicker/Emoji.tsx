@@ -38,6 +38,7 @@ class Emoji extends React.PureComponent<IProps> {
                 disabled={this.props.disabled}
                 role={this.props.role}
                 focusOnMouseOver
+                title={emoji.shortcodes.map(str => `:${str}:`).join(", ")}
             >
                 <div className={`mx_EmojiPicker_item ${isSelected ? "mx_EmojiPicker_item_selected" : ""}`}>
                     {emoji.unicode}
