@@ -24,11 +24,9 @@ import { _t } from "../../../languageHandler";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import dis from "../../../dispatcher/dispatcher";
 import { type ActionPayload } from "../../../dispatcher/payloads";
-import Stickerpicker from "./Stickerpicker";
 import { makeRoomPermalink, type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
-import E2EIcon from "./E2EIcon";
 import SettingsStore from "../../../settings/SettingsStore";
-import { aboveLeftOf, type MenuProps } from "../../structures/ContextMenu";
+import { aboveLeftOf, aboveRightOf, type MenuProps } from "../../structures/ContextMenu";
 import ReplyPreview from "./ReplyPreview";
 import { UserIdentityWarning } from "./UserIdentityWarning";
 import { UPDATE_EVENT } from "../../../stores/AsyncStore";
@@ -54,6 +52,8 @@ import { type MatrixClientProps, withMatrixClientHOC } from "../../../contexts/M
 import { UIFeature } from "../../../settings/UIFeature";
 import { formatTimeLeft } from "../../../DateUtils";
 import RoomReplacedSvg from "../../../../res/img/room_replaced.svg";
+import MessageComposerAttachments from "./MessageComposerAttachments";
+import { MessageComposerVoiceRecordingButton } from "./MessageComposerVoiceRecordingButton";
 
 // The prefix used when persisting editor drafts to localstorage.
 export const WYSIWYG_EDITOR_STATE_STORAGE_PREFIX = "mx_wysiwyg_state_";
@@ -497,7 +497,26 @@ export class MessageComposer extends React.Component<IProps, IState> {
         return this.state.showStickersButton && !isLocalRoom(this.props.room);
     }
 
-    private getMenuPosition(): MenuProps | undefined {
+    private getLeftMenuPosition(): MenuProps | undefined {
+        if (this.ref.current) {
+            const hasFormattingButtons = this.state.isWysiwygLabEnabled && this.state.isRichTextEnabled;
+            const contentRect = this.ref.current.getBoundingClientRect();
+            // Here we need to remove the all the extra space above the editor
+            // Instead of doing a querySelector or pass a ref to find the compute the height formatting buttons
+            // We are using an arbitrary value, the formatting buttons height doesn't change during the lifecycle of the component
+            // It's easier to just use a constant here instead of an over-engineering way to find the height
+            const heightToRemove = hasFormattingButtons ? 36 : 0;
+            const fixedRect = new DOMRect(
+                contentRect.x,
+                contentRect.y + heightToRemove,
+                contentRect.width,
+                contentRect.height - heightToRemove,
+            );
+            return aboveRightOf(fixedRect);
+        }
+    }
+
+    private getRightMenuPosition(): MenuProps | undefined {
         if (this.ref.current) {
             const hasFormattingButtons = this.state.isWysiwygLabEnabled && this.state.isRichTextEnabled;
             const contentRect = this.ref.current.getBoundingClientRect();
@@ -525,20 +544,14 @@ export class MessageComposer extends React.Component<IProps, IState> {
     };
 
     public render(): React.ReactNode {
-        const hasE2EIcon = Boolean(!this.state.isWysiwygLabEnabled && this.props.e2eStatus);
-        const e2eIcon = hasE2EIcon && (
-            <div className="mx_MessageComposer_e2eIconWrapper">
-                <E2EIcon key="e2eIcon" status={this.props.e2eStatus!} className="mx_MessageComposer_e2eIcon" />
-            </div>
-        );
-
         const controls: ReactNode[] = [];
-        const menuPosition = this.getMenuPosition();
+        const leftMenuPosition = this.getLeftMenuPosition();
+        const rightMenuPosition = this.getRightMenuPosition();
 
         const canSendMessages = this.context.canSendMessages && !this.context.tombstone;
         let composer: ReactNode;
         if (canSendMessages) {
-            if (this.state.isWysiwygLabEnabled && menuPosition) {
+            if (this.state.isWysiwygLabEnabled && rightMenuPosition) {
                 composer = (
                     <SendWysiwygComposer
                         key="controls_input"
@@ -548,7 +561,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                         isRichTextEnabled={this.state.isRichTextEnabled}
                         initialContent={this.state.initialComposerContent}
                         e2eStatus={this.props.e2eStatus}
-                        menuPosition={menuPosition}
+                        menuPosition={rightMenuPosition}
                         placeholder={this.renderPlaceholderText()}
                         eventRelation={this.props.relation}
                     />
@@ -621,26 +634,11 @@ export class MessageComposer extends React.Component<IProps, IState> {
         const isTooltipOpen = Boolean(this.state.recordingTimeLeftSeconds);
         const secondsLeft = this.state.recordingTimeLeftSeconds ? Math.round(this.state.recordingTimeLeftSeconds) : 0;
 
-        const threadId =
-            this.props.relation?.rel_type === THREAD_RELATION_TYPE.name ? this.props.relation.event_id : null;
-
-        controls.push(
-            <Stickerpicker
-                room={this.props.room}
-                threadId={threadId}
-                isStickerPickerOpen={this.state.isStickerPickerOpen}
-                setStickerPickerOpen={this.setStickerPickerOpen}
-                menuPosition={menuPosition}
-                key="stickers"
-            />,
-        );
-
         const showSendButton = canSendMessages && (!this.state.isComposerEmpty || this.state.haveRecording);
 
         const classes = classNames({
             "mx_MessageComposer": true,
             "mx_MessageComposer--compact": this.props.compact,
-            "mx_MessageComposer_e2eStatus": hasE2EIcon,
             "mx_MessageComposer_wysiwyg": this.state.isWysiwygLabEnabled,
         });
 
@@ -654,7 +652,20 @@ export class MessageComposer extends React.Component<IProps, IState> {
                             permalinkCreator={this.props.permalinkCreator}
                         />
                         <div className="mx_MessageComposer_row">
-                            {e2eIcon}
+                            <div className="mx_MessageComposer_actions">
+                                {canSendMessages && (
+                                    <MessageComposerAttachments
+                                        haveRecording={this.state.haveRecording}
+                                        isMenuOpen={this.state.isMenuOpen}
+                                        toggleButtonMenu={this.toggleButtonMenu}
+                                        menuPosition={leftMenuPosition}
+                                        showLocationButton={
+                                            !window.electron && SettingsStore.getValue(UIFeature.LocationSharing)
+                                        }
+                                        showPollsButton={this.state.showPollsButton}
+                                    />
+                                )}
+                            </div>
                             {composer}
                             <div className="mx_MessageComposer_actions">
                                 {controls}
@@ -662,23 +673,15 @@ export class MessageComposer extends React.Component<IProps, IState> {
                                     <MessageComposerButtons
                                         addEmoji={this.addEmoji}
                                         haveRecording={this.state.haveRecording}
-                                        isMenuOpen={this.state.isMenuOpen}
-                                        isStickerPickerOpen={this.state.isStickerPickerOpen}
-                                        menuPosition={menuPosition}
                                         relation={this.props.relation}
-                                        onRecordStartEndClick={this.onRecordStartEndClick}
-                                        setStickerPickerOpen={this.setStickerPickerOpen}
-                                        showLocationButton={
-                                            !window.electron && SettingsStore.getValue(UIFeature.LocationSharing)
-                                        }
-                                        showPollsButton={this.state.showPollsButton}
                                         showStickersButton={this.showStickersButton}
                                         isRichTextEnabled={this.state.isRichTextEnabled}
                                         onComposerModeClick={this.onRichTextToggle}
-                                        toggleButtonMenu={this.toggleButtonMenu}
+                                        menuPosition={rightMenuPosition}
+                                        room={this.props.room}
                                     />
                                 )}
-                                {showSendButton && (
+                                {showSendButton ? (
                                     <SendButton
                                         key="controls_send"
                                         onClick={this.sendMessage}
@@ -687,6 +690,11 @@ export class MessageComposer extends React.Component<IProps, IState> {
                                                 ? _t("composer|send_button_voice_message")
                                                 : undefined
                                         }
+                                    />
+                                ) : (
+                                    <MessageComposerVoiceRecordingButton
+                                        onClick={this.onRecordStartEndClick}
+                                        narrow={this.context.narrow}
                                     />
                                 )}
                             </div>

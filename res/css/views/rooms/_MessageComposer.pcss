@@ -11,8 +11,7 @@ Please see LICENSE files in the repository root for full details.
     margin: auto;
     border-top: 1px solid $primary-hairline-color;
     position: relative;
-    padding-left: 42px;
-    padding-right: 16px;
+    padding-right: 12px;    
 }
 
 .mx_MessageComposer_replaced_wrapper {
@@ -54,6 +53,7 @@ Please see LICENSE files in the repository root for full details.
     display: flex;
     align-items: center;
     gap: 6px;
+    align-self: stretch;
 }
 
 .mx_MessageComposer {
@@ -252,8 +252,13 @@ Please see LICENSE files in the repository root for full details.
     mask-image: url("$(res)/img/element-icons/room/composer/poll.svg");
 }
 
-.mx_MessageComposer_voiceMessage::before {
-    mask-image: url("@vector-im/compound-design-tokens/icons/mic-on-solid.svg");
+.mx_MessageComposer_voiceMessage {
+    padding-right: 6px;
+
+    &::before {
+        mask-image: url("@vector-im/compound-design-tokens/icons/mic-on-solid.svg");
+        mask-size: 24px;
+    }
 }
 
 .mx_MessageComposer_plain_text::before {
@@ -272,9 +277,31 @@ Please see LICENSE files in the repository root for full details.
     mask-image: url("$(res)/img/element-icons/room/composer/sticker.svg");
 }
 
-.mx_MessageComposer_buttonMenu::before {
-    mask-image: url("@vector-im/compound-design-tokens/icons/overflow-horizontal.svg");
-    mask-size: 24px;
+.mx_MessageComposer_buttonMenu,
+.mx_EmojiButton,
+.mx_MessageComposer_voiceMessage {
+    height: 100%;
+
+    &::before,
+    &:after {
+        top: 50%;
+        left: 50%;
+        position: absolute;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.mx_MessageComposer_buttonMenu {
+    padding: 0 16px;
+    width: var(--size);
+
+    &::before {
+        mask-image: url("$(res)/img/element-icons/room/composer/attach.svg");
+    }
+}
+
+.mx_MessageComposer_attachmentsMenuPlaceholder {
+    width: 58px;
 }
 
 .mx_MessageComposer_sendMessage {

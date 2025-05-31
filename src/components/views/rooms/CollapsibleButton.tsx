@@ -10,7 +10,7 @@ import React, { type RefObject, useContext } from "react";
 import classNames from "classnames";
 
 import AccessibleButton, { type ButtonProps } from "../elements/AccessibleButton";
-import { OverflowMenuContext } from "./MessageComposerButtons";
+import { OverflowMenuContext } from "./MessageComposerAttachments";
 import { IconizedContextMenuOption } from "../context_menus/IconizedContextMenu";
 
 interface Props extends Omit<ButtonProps<"div">, "element"> {

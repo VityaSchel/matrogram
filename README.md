@@ -7,6 +7,7 @@ Work in progress.
 Features:
 - Channels, chats and DMs all share the same list in the sidebar
 - Two line message previews in sidebar
+- Combined emojis/stickers popup
 - Small design changes that simplify interface such as integrated stickers/emoji popup, larger message context menu click area, less buttons
 
 ## Donate

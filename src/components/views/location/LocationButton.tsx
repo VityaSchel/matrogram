@@ -13,7 +13,7 @@ import { type RoomMember, type IEventRelation } from "matrix-js-sdk/src/matrix";
 import { _t } from "../../../languageHandler";
 import { CollapsibleButton } from "../rooms/CollapsibleButton";
 import { aboveLeftOf, useContextMenu, type MenuProps } from "../../structures/ContextMenu";
-import { OverflowMenuContext } from "../rooms/MessageComposerButtons";
+import { OverflowMenuContext } from "../rooms/MessageComposerAttachments";
 import LocationShareMenu from "./LocationShareMenu";
 
 export interface IProps {

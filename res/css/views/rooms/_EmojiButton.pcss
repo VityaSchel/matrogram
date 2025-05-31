@@ -10,10 +10,6 @@ Please see LICENSE files in the repository root for full details.
     @mixin composerButton 50%, var(--cpd-color-icon-secondary), var(--cpd-color-bg-subtle-secondary);
 }
 
-.mx_EmojiButton_highlight {
-    @mixin composerButtonHighLight;
-}
-
 .mx_EmojiButton_icon::before {
     mask-image: url("$(res)/img/element-icons/room/composer/emoji.svg");
 }
@@ -22,4 +18,13 @@ Please see LICENSE files in the repository root for full details.
     .mx_EmojiButton {
         @mixin composerButton 5px, $tertiary-content, $panels;
     }
+}
+
+.mx_EmojiButton_tabs {
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    gap: 8px;
+    border: var(--cpd-border-width-1) solid var(--cpd-color-border-interactive-secondary);
+    border-width: 1px 0 0 0;
 }

@@ -14,7 +14,7 @@ Please see LICENSE files in the repository root for full details.
     /* fixed line height to prevent emoji from being taller than text */
     line-height: $font-18px;
     justify-content: center;
-    margin-right: 6px;
+    margin: 0;
     /* don't grow wider than available space */
     min-width: 0;
 
@@ -34,10 +34,10 @@ Please see LICENSE files in the repository root for full details.
             /* in it's parent vertically */
             /* while keeping the autocomplete at the top */
             /* of the composer. The parent needs to be a flex container for this to work. */
-            margin: auto 0;
-            /* max-height at this level so autocomplete doesn't get scrolled too */
-            max-height: 140px;
             overflow-y: auto;
+            flex: 1;
+            display: flex;
+            align-items: center;
         }
     }
 }

@@ -24,9 +24,7 @@ describe("MessageComposerButtons", () => {
         haveRecording: false,
         isStickerPickerOpen: false,
         menuPosition: undefined,
-        onRecordStartEndClick: () => {},
         setStickerPickerOpen: () => {},
-        toggleButtonMenu: () => {},
     };
 
     const mockClient = createTestClient();
@@ -63,8 +61,6 @@ describe("MessageComposerButtons", () => {
         wrapAndRender(
             <MessageComposerButtons
                 {...mockProps}
-                isMenuOpen={false}
-                showLocationButton={true}
                 showPollsButton={true}
                 showStickersButton={true}
             />,

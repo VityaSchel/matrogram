@@ -15,7 +15,6 @@ import * as recent from "../../../emojipicker/recent";
 import AutoHideScrollbar from "../../structures/AutoHideScrollbar";
 import Header from "./Header";
 import Search from "./Search";
-import Preview from "./Preview";
 import Category, { type CategoryKey, type ICategory } from "./Category";
 import { filterBoolean } from "../../../utils/arrays";
 import {

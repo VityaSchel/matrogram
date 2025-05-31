@@ -20,9 +20,9 @@ interface EmojiProps {
 }
 
 export function Emoji({ menuPosition }: EmojiProps): JSX.Element {
-    const roomContext = useScopedRoomContext("timelineRenderingType");
+    const roomContext = useScopedRoomContext("room", "timelineRenderingType", "threadId");
 
-    return (
+    return roomContext.room ? (
         <EmojiButton
             menuPosition={menuPosition}
             addEmoji={(emoji) => {
@@ -33,6 +33,8 @@ export function Emoji({ menuPosition }: EmojiProps): JSX.Element {
                 });
                 return true;
             }}
+            room={roomContext.room}
+            threadId={roomContext.threadId}
         />
-    );
+    ) : <React.Fragment />;
 }
