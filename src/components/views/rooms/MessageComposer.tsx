@@ -6,54 +6,56 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { type JSX, createRef, type ReactNode } from "react";
+import { Tooltip } from "@vector-im/compound-web";
 import classNames from "classnames";
+import { type Optional } from "matrix-events-sdk";
+import { logger } from "matrix-js-sdk/src/logger";
 import {
+    EventType,
+    THREAD_RELATION_TYPE,
     type IEventRelation,
     type MatrixEvent,
     type Room,
     type RoomMember,
-    EventType,
-    THREAD_RELATION_TYPE,
 } from "matrix-js-sdk/src/matrix";
-import { type Optional } from "matrix-events-sdk";
-import { Tooltip } from "@vector-im/compound-web";
-import { logger } from "matrix-js-sdk/src/logger";
+import React, { createRef, type JSX, type ReactNode } from "react";
 
-import { _t } from "../../../languageHandler";
-import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import RoomReplacedSvg from "../../../../res/img/room_replaced.svg";
+import { type VoiceMessageRecording } from "../../../audio/VoiceMessageRecording";
+import { RecordingState } from "../../../audio/VoiceRecording";
+import { withMatrixClientHOC, type MatrixClientProps } from "../../../contexts/MatrixClientContext";
+import RoomContext from "../../../contexts/RoomContext";
+import { formatTimeLeft } from "../../../DateUtils";
+import { Action } from "../../../dispatcher/actions";
 import dis from "../../../dispatcher/dispatcher";
 import { type ActionPayload } from "../../../dispatcher/payloads";
-import { makeRoomPermalink, type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
+import { type ComposerInsertPayload } from "../../../dispatcher/payloads/ComposerInsertPayload";
+import { type SettingUpdatedPayload } from "../../../dispatcher/payloads/SettingUpdatedPayload";
+import { type ViewRoomPayload } from "../../../dispatcher/payloads/ViewRoomPayload";
+import type EditorModel from "../../../editor/model";
+import { _t } from "../../../languageHandler";
+import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import SettingsStore from "../../../settings/SettingsStore";
-import { aboveLeftOf, aboveRightOf, type MenuProps } from "../../structures/ContextMenu";
-import ReplyPreview from "./ReplyPreview";
-import { UserIdentityWarning } from "./UserIdentityWarning";
+import { UIFeature } from "../../../settings/UIFeature";
 import { UPDATE_EVENT } from "../../../stores/AsyncStore";
-import VoiceRecordComposerTile from "./VoiceRecordComposerTile";
+import UIStore, { UI_EVENTS } from "../../../stores/UIStore";
 import { VoiceRecordingStore } from "../../../stores/VoiceRecordingStore";
-import { RecordingState } from "../../../audio/VoiceRecording";
+import { isLocalRoom } from "../../../utils/localRoom/isLocalRoom";
+import { makeRoomPermalink, type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
 import type ResizeNotifier from "../../../utils/ResizeNotifier";
 import { type E2EStatus } from "../../../utils/ShieldUtils";
-import SendMessageComposer, { type SendMessageComposer as SendMessageComposerClass } from "./SendMessageComposer";
-import { type ComposerInsertPayload } from "../../../dispatcher/payloads/ComposerInsertPayload";
-import { Action } from "../../../dispatcher/actions";
-import type EditorModel from "../../../editor/model";
-import UIStore, { UI_EVENTS } from "../../../stores/UIStore";
-import RoomContext from "../../../contexts/RoomContext";
-import { type SettingUpdatedPayload } from "../../../dispatcher/payloads/SettingUpdatedPayload";
-import MessageComposerButtons from "./MessageComposerButtons";
+import { aboveLeftOf, aboveRightOf, type MenuProps } from "../../structures/ContextMenu";
 import AccessibleButton, { type ButtonEvent } from "../elements/AccessibleButton";
-import { type ViewRoomPayload } from "../../../dispatcher/payloads/ViewRoomPayload";
-import { isLocalRoom } from "../../../utils/localRoom/isLocalRoom";
-import { type VoiceMessageRecording } from "../../../audio/VoiceMessageRecording";
-import { SendWysiwygComposer, sendMessage, getConversionFunctions } from "./wysiwyg_composer/";
-import { type MatrixClientProps, withMatrixClientHOC } from "../../../contexts/MatrixClientContext";
-import { UIFeature } from "../../../settings/UIFeature";
-import { formatTimeLeft } from "../../../DateUtils";
-import RoomReplacedSvg from "../../../../res/img/room_replaced.svg";
 import MessageComposerAttachments from "./MessageComposerAttachments";
-import { MessageComposerVoiceRecordingButton } from "./MessageComposerVoiceRecordingButton";
+import MessageComposerButtons from "./MessageComposerButtons";
+// import { MessageComposerVoiceRecordingButton } from "./MessageComposerVoiceRecordingButton";
+import { MessageComposerVideoRecordingButton } from "./MessageComposerVideoRecordingButton";
+import ReplyPreview from "./ReplyPreview";
+import SendMessageComposer, { type SendMessageComposer as SendMessageComposerClass } from "./SendMessageComposer";
+import { UserIdentityWarning } from "./UserIdentityWarning";
+import VoiceRecordComposerTile from "./VoiceRecordComposerTile";
+import { SendWysiwygComposer, getConversionFunctions, sendMessage } from "./wysiwyg_composer/";
+import VideoRecordComposerTile from "./VideoMessageRecordComposerTile";
 
 // The prefix used when persisting editor drafts to localstorage.
 export const WYSIWYG_EDITOR_STATE_STORAGE_PREFIX = "mx_wysiwyg_state_";
@@ -111,6 +113,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
     private dispatcherRef?: string;
     private messageComposerInput = createRef<SendMessageComposerClass>();
     private voiceRecordingButton = createRef<VoiceRecordComposerTile>();
+    private videoRecordingButton = createRef<VideoRecordComposerTile>();
     private ref = createRef<HTMLDivElement>();
     private instanceId: number;
 
@@ -535,8 +538,16 @@ export class MessageComposer extends React.Component<IProps, IState> {
         }
     }
 
-    private onRecordStartEndClick = (): void => {
+    private onVoiceRecordStartEndClick = (): void => {
         this.voiceRecordingButton.current?.onRecordStartEndClick();
+
+        if (this.context.narrow) {
+            this.toggleButtonMenu();
+        }
+    };
+
+    private onVideoRecordStartEndClick = (): void => {
+        this.videoRecordingButton.current?.onRecordStartEndClick();
 
         if (this.context.narrow) {
             this.toggleButtonMenu();
@@ -586,6 +597,16 @@ export class MessageComposer extends React.Component<IProps, IState> {
                 <VoiceRecordComposerTile
                     key="controls_voice_record"
                     ref={this.voiceRecordingButton}
+                    room={this.props.room}
+                    relation={this.props.relation}
+                    replyToEvent={this.props.replyToEvent}
+                />,
+            );
+
+            controls.push(
+                <VideoRecordComposerTile
+                    key="controls_video_record"
+                    ref={this.videoRecordingButton}
                     room={this.props.room}
                     relation={this.props.relation}
                     replyToEvent={this.props.replyToEvent}
@@ -692,10 +713,16 @@ export class MessageComposer extends React.Component<IProps, IState> {
                                         }
                                     />
                                 ) : (
-                                    <MessageComposerVoiceRecordingButton
-                                        onClick={this.onRecordStartEndClick}
-                                        narrow={this.context.narrow}
-                                    />
+                                    canSendMessages && (
+                                        // <MessageComposerVoiceRecordingButton
+                                        //     onClick={this.onVoiceRecordStartEndClick}
+                                        //     narrow={this.context.narrow}
+                                        // />
+                                        <MessageComposerVideoRecordingButton
+                                            onClick={this.onVideoRecordStartEndClick}
+                                            narrow={this.context.narrow}
+                                        />
+                                    )
                                 )}
                             </div>
                         </div>

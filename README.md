@@ -1,6 +1,6 @@
 # Matrogram
 
-Mastogram is a fork of Element Web (Element Desktop) which focuses on bringing Telegram native macOS client experience into Matrix. This client greatly simplifies interface removing cluttering duplicate feature elements such as "explore" button, grouped collapsable chats, spaces selector, forces sorting by recent. This client tries its best to keep all Elemenet and Matrix features instead of being "a telegram frontend for matrix backend" with polyfills and fallbacks.
+Matrogram is a fork of Element Web (embedded in Element Desktop) which focuses on bringing Telegram native macOS client experience into Matrix. This client greatly simplifies UI by removing cluttering interface duplicate features such as "explore" button, grouped collapsable chats, spaces selector and makes changes to app logic such as forcing chat sorting by recent. This client tries its best to keep all Elemenet and Matrix features instead of being "a telegram frontend for matrix backend" so you can use it as a drop in replacement for Element desktop/web and switch back and forth anytime.
 
 Work in progress.
 
