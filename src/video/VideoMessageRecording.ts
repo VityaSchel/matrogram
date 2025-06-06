@@ -1,13 +1,12 @@
 /* eslint-disable matrix-org/require-copyright-header */
 import { type MatrixClient } from "matrix-js-sdk/src/matrix";
 import { type EncryptedFile } from "matrix-js-sdk/src/types";
-import { type SimpleObservable } from "matrix-widget-api";
 
 import { uploadFile } from "../ContentMessages";
 import { type IDestroyable } from "../utils/IDestroyable";
 import { Singleflight } from "../utils/Singleflight";
 import { Playback } from "./Playback";
-import { type IRecordingUpdate, RecordingState, VideoRecording } from "./VideoRecording";
+import { RecordingState, VideoRecording } from "./VideoRecording";
 
 export interface IUpload {
     mxc?: string; // for unencrypted uploads
@@ -35,7 +34,7 @@ export class VideoMessageRecording implements IDestroyable {
             throw new Error("Recording already prepared");
         }
 
-        return this.videoRecording.start();
+        await this.videoRecording.start();
     }
 
     public async stop(): Promise<Blob[]> {
@@ -75,7 +74,7 @@ export class VideoMessageRecording implements IDestroyable {
      */
     public getPlayback(): Playback {
         this.playback = Singleflight.for(this, "playback").do(() => {
-            return new Playback(this.size); // cast to ArrayBuffer proper;
+            return new Playback(this.blobs, this.videoRecording); // cast to ArrayBuffer proper;
         });
         return this.playback;
     }
@@ -117,10 +116,6 @@ export class VideoMessageRecording implements IDestroyable {
         return this.blobs.reduce((acc, blob) => acc + blob.size, 0);
     }
 
-    public get liveData(): SimpleObservable<IRecordingUpdate> {
-        return this.videoRecording.liveData;
-    }
-
     public get isSupported(): boolean {
         return this.videoRecording.isSupported;
     }
@@ -130,6 +125,10 @@ export class VideoMessageRecording implements IDestroyable {
         this.videoRecording.destroy();
         this.blobs = [];
         this.size = 0;
+    }
+
+    public get stream(): MediaStream | undefined {
+        return this.videoRecording.recorderStream;
     }
 
     private onDataAvailable = (data: Blob): void => {

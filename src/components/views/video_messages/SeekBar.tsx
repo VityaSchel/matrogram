@@ -8,10 +8,10 @@ Please see LICENSE files in the repository root for full details.
 
 import React, { type ChangeEvent, type CSSProperties, type ReactNode } from "react";
 
-import { type PlaybackInterface } from "../../../video/Playback";
+import { _t } from "../../../languageHandler";
 import { MarkedExecution } from "../../../utils/MarkedExecution";
 import { percentageOf } from "../../../utils/numbers";
-import { _t } from "../../../languageHandler";
+import { type PlaybackInterface } from "../../../video/Playback";
 
 interface IProps {
     // Playback instance to render. Cannot change during component lifecycle: create
@@ -57,10 +57,7 @@ export default class SeekBar extends React.PureComponent<IProps, IState> {
         };
     }
 
-    public componentDidMount(): void {
-        // We don't need to de-register: the class handles this for us internally
-        this.props.playback.liveData.onUpdate(() => this.animationFrameFn.mark());
-    }
+    public componentDidMount(): void {}
 
     private doUpdate(): void {
         this.setState({

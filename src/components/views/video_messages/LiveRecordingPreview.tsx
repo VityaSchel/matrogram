@@ -1,9 +1,8 @@
 /* eslint-disable matrix-org/require-copyright-header */
-import React from "react";
+import React, { createRef } from "react";
 
 import { MarkedExecution } from "../../../utils/MarkedExecution";
 import { type VideoMessageRecording } from "../../../video/VideoMessageRecording";
-import { type IRecordingUpdate } from "../../../video/VideoRecording";
 
 interface IProps {
     recorder: VideoMessageRecording;
@@ -13,6 +12,8 @@ interface IProps {
  * A live video message preview
  */
 export default class LiveRecordingPreview extends React.PureComponent<IProps> {
+    private videoRef = createRef<HTMLVideoElement>();
+
     public static defaultProps = {
         progress: 1,
     };
@@ -24,18 +25,26 @@ export default class LiveRecordingPreview extends React.PureComponent<IProps> {
 
     public constructor(props: IProps) {
         super(props);
+        this.state = {};
     }
 
     public componentDidMount(): void {
-        this.props.recorder.liveData.onUpdate((update: IRecordingUpdate) => {
-            this.scheduledUpdate.mark();
-        });
+        if (this.videoRef.current) {
+            if (this.props.recorder.stream) {
+                this.videoRef.current.srcObject = this.props.recorder.stream;
+                this.videoRef.current.play();
+            } else {
+                console.warn("No stream available for LiveRecordingPreview");
+            }
+        } else {
+            console.warn("Video element not available in LiveRecordingPreview");
+        }
     }
 
     public render(): React.ReactNode {
         return (
             <div className="mx_LiveRecordingPreview">
-                <video />
+                <video ref={this.videoRef} />
             </div>
         );
     }

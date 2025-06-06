@@ -6,47 +6,48 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
+import "@types/modernizr";
 // eslint-disable-next-line no-restricted-imports
 import "matrix-js-sdk/src/@types/global"; // load matrix-js-sdk's type extensions first
-import "@types/modernizr";
 
 import type { ModuleLoader } from "@element-hq/element-web-module-api";
 import type { logger } from "matrix-js-sdk/src/logger";
+import type MatrixChat from "../components/structures/MatrixChat";
 import type ContentMessages from "../ContentMessages";
-import { type IMatrixClientPeg } from "../MatrixClientPeg";
-import type ToastStore from "../stores/ToastStore";
 import type DeviceListener from "../DeviceListener";
-import { type RoomListStore } from "../stores/room-list/Interface";
-import { type PlatformPeg } from "../PlatformPeg";
-import type RoomListLayoutStore from "../stores/room-list/RoomListLayoutStore";
-import { type IntegrationManagers } from "../integrations/IntegrationManagers";
-import { type ModalManager } from "../Modal";
-import type SettingsStore from "../settings/SettingsStore";
-import { type Notifier } from "../Notifier";
-import type RightPanelStore from "../stores/right-panel/RightPanelStore";
-import type WidgetStore from "../stores/WidgetStore";
-import type LegacyCallHandler from "../LegacyCallHandler";
-import type UserActivity from "../UserActivity";
-import { type ModalWidgetStore } from "../stores/ModalWidgetStore";
-import { type WidgetLayoutStore } from "../stores/widgets/WidgetLayoutStore";
-import { type SpaceStoreClass } from "../stores/spaces/SpaceStore";
-import type TypingStore from "../stores/TypingStore";
+import { type MatrixDispatcher } from "../dispatcher/dispatcher";
+import { type IConfigOptions } from "../IConfigOptions";
 import { type EventIndexPeg } from "../indexing/EventIndexPeg";
-import { type VoiceRecordingStore } from "../stores/VoiceRecordingStore";
+import { type IntegrationManagers } from "../integrations/IntegrationManagers";
+import type LegacyCallHandler from "../LegacyCallHandler";
+import { type IMatrixClientPeg } from "../MatrixClientPeg";
+import { type ModalManager } from "../Modal";
+import { type ModuleApiType } from "../modules/Api.ts";
+import { type Notifier } from "../Notifier";
 import type PerformanceMonitor from "../performance";
-import type UIStore from "../stores/UIStore";
-import { type SetupEncryptionStore } from "../stores/SetupEncryptionStore";
-import { type RoomScrollStateStore } from "../stores/RoomScrollStateStore";
+import { type PlatformPeg } from "../PlatformPeg";
 import { type ConsoleLogger, type IndexedDBLogStore } from "../rageshake/rageshake";
+import type SettingsStore from "../settings/SettingsStore";
 import type ActiveWidgetStore from "../stores/ActiveWidgetStore";
 import type AutoRageshakeStore from "../stores/AutoRageshakeStore";
-import { type IConfigOptions } from "../IConfigOptions";
-import { type MatrixDispatcher } from "../dispatcher/dispatcher";
-import { type DeepReadonly } from "./common";
-import type MatrixChat from "../components/structures/MatrixChat";
 import { type InitialCryptoSetupStore } from "../stores/InitialCryptoSetupStore";
-import { type ModuleApiType } from "../modules/Api.ts";
+import { type ModalWidgetStore } from "../stores/ModalWidgetStore";
+import type RightPanelStore from "../stores/right-panel/RightPanelStore";
 import type { RoomListStoreV3Class } from "../stores/room-list-v3/RoomListStoreV3.ts";
+import { type RoomListStore } from "../stores/room-list/Interface";
+import type RoomListLayoutStore from "../stores/room-list/RoomListLayoutStore";
+import { type RoomScrollStateStore } from "../stores/RoomScrollStateStore";
+import { type SetupEncryptionStore } from "../stores/SetupEncryptionStore";
+import { type SpaceStoreClass } from "../stores/spaces/SpaceStore";
+import type ToastStore from "../stores/ToastStore";
+import type TypingStore from "../stores/TypingStore";
+import type UIStore from "../stores/UIStore";
+import { type VideoRecordingStore } from "../stores/VideoRecordingStore.ts";
+import { type VoiceRecordingStore } from "../stores/VoiceRecordingStore";
+import { type WidgetLayoutStore } from "../stores/widgets/WidgetLayoutStore";
+import type WidgetStore from "../stores/WidgetStore";
+import type UserActivity from "../UserActivity";
+import { type DeepReadonly } from "./common";
 
 /* eslint-disable @typescript-eslint/naming-convention */
 
@@ -105,6 +106,7 @@ declare global {
         mxModalWidgetStore: ModalWidgetStore;
         mxSpaceStore: SpaceStoreClass;
         mxVoiceRecordingStore: VoiceRecordingStore;
+        mxVideoRecordingStore: VideoRecordingStore;
         mxTypingStore: TypingStore;
         mxEventIndexPeg: EventIndexPeg;
         mxPerformanceMonitor: PerformanceMonitor;
@@ -165,7 +167,7 @@ declare global {
     // https://github.com/microsoft/TypeScript/issues/28308#issuecomment-650802278
     const AudioWorkletProcessor: {
         prototype: AudioWorkletProcessor;
-        new (options?: AudioWorkletNodeOptions): AudioWorkletProcessor;
+        new(options?: AudioWorkletNodeOptions): AudioWorkletProcessor;
     };
 
     // https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1029#issuecomment-881509595
@@ -193,16 +195,16 @@ declare global {
     var grecaptcha:
         | undefined
         | {
-              reset: (id: string) => void;
-              render: (
-                  divId: string,
-                  options: {
-                      sitekey: string;
-                      callback: (response: string) => void;
-                  },
-              ) => string;
-              isReady: () => boolean;
-          };
+            reset: (id: string) => void;
+            render: (
+                divId: string,
+                options: {
+                    sitekey: string;
+                    callback: (response: string) => void;
+                },
+            ) => string;
+            isReady: () => boolean;
+        };
 
     // eslint-disable-next-line no-var, camelcase
     var mx_rage_logger: ConsoleLogger;

@@ -20,6 +20,7 @@ export interface IProps {
 interface IState {
     playbackPhase: PlaybackState;
     error?: boolean;
+    src?: string;
 }
 
 export default abstract class VideoPlayerBase<T extends IProps = IProps> extends React.PureComponent<T, IState> {
@@ -38,12 +39,18 @@ export default abstract class VideoPlayerBase<T extends IProps = IProps> extends
         // We don't need to de-register: the class handles this for us internally
         this.props.playback.on(UPDATE_EVENT, this.onPlaybackUpdate);
 
+        this.setState({ src: URL.createObjectURL(this.props.playback.data) });
+
         // Don't wait for the promise to complete - it will emit a progress update when it
         // is done, and it's not meant to take long anyhow.
         this.props.playback.prepare().catch((e) => {
             logger.error("Error processing audio file:", e);
             this.setState({ error: true });
         });
+    }
+
+    public componentWillUnmount(): void {
+        if (this.state.src) URL.revokeObjectURL(this.state.src);
     }
 
     protected onKeyDown = (ev: React.KeyboardEvent): void => {

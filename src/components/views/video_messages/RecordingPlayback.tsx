@@ -1,9 +1,9 @@
 /* eslint-disable matrix-org/require-copyright-header */
 import React, { type ReactNode } from "react";
 
-import VideoPlayerBase, { type IProps as IVideoPlayerBaseProps } from "./VideoPlayerBase";
-import SeekBar from "./SeekBar";
 import { PlaybackState } from "../../../video/Playback";
+import SeekBar from "./SeekBar";
+import VideoPlayerBase, { type IProps as IVideoPlayerBaseProps } from "./VideoPlayerBase";
 
 export enum PlaybackLayout {
     /**
@@ -25,6 +25,7 @@ export default class RecordingPlayback extends VideoPlayerBase<IProps> {
     private renderPreviewLook(): ReactNode {
         return (
             <>
+                <video ref={this.props.playback.playerRef} src={this.state.src} loop />
                 <SeekBar
                     playback={this.props.playback}
                     tabIndex={0} // allow keyboard users to fall into the seek bar
@@ -63,7 +64,7 @@ export default class RecordingPlayback extends VideoPlayerBase<IProps> {
         }
 
         return (
-            <div className="mx_MediaBody mx_VoiceMessagePrimaryContainer" onKeyDown={this.onKeyDown}>
+            <div className="mx_VideoMessagePrimaryContainer" onKeyDown={this.onKeyDown}>
                 {body}
             </div>
         );

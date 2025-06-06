@@ -1,32 +1,32 @@
 /* eslint-disable matrix-org/require-copyright-header */
-import React, { type ReactNode } from "react";
-import { type Room, type IEventRelation, type MatrixEvent } from "matrix-js-sdk/src/matrix";
-import { logger } from "matrix-js-sdk/src/logger";
 import { type Optional } from "matrix-events-sdk";
+import { logger } from "matrix-js-sdk/src/logger";
+import { type IEventRelation, type MatrixEvent, type Room } from "matrix-js-sdk/src/matrix";
+import React, { type ReactNode } from "react";
 
-import { _t } from "../../../languageHandler";
-import { RecordingState } from "../../../video/VideoRecording";
-import { MatrixClientPeg } from "../../../MatrixClientPeg";
-import LiveRecordingPreview from "../video_messages/LiveRecordingPreview";
-import { VideoRecordingStore } from "../../../stores/VideoRecordingStore";
-import { UPDATE_EVENT } from "../../../stores/AsyncStore";
-import RecordingPlayback, { PlaybackLayout } from "../video_messages/RecordingPlayback";
-import Modal from "../../../Modal";
-import ErrorDialog from "../dialogs/ErrorDialog";
-import MediaDeviceHandler, { MediaDeviceKindEnum } from "../../../MediaDeviceHandler";
-import NotificationBadge from "./NotificationBadge";
-import { StaticNotificationState } from "../../../stores/notifications/StaticNotificationState";
-import { NotificationLevel } from "../../../stores/notifications/NotificationLevel";
-import InlineSpinner from "../elements/InlineSpinner";
-import { PlaybackManager } from "../../../video/PlaybackManager";
-import { doMaybeLocalRoomAction } from "../../../utils/local-room";
-import defaultDispatcher from "../../../dispatcher/dispatcher";
-import { attachMentions, attachRelation } from "./SendMessageComposer";
-import { addReplyToMessageContent } from "../../../utils/Reply";
 import RoomContext from "../../../contexts/RoomContext";
-import { type IUpload, type VideoMessageRecording } from "../../../video/VideoMessageRecording";
+import defaultDispatcher from "../../../dispatcher/dispatcher";
+import { _t } from "../../../languageHandler";
+import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import MediaDeviceHandler, { MediaDeviceKindEnum } from "../../../MediaDeviceHandler";
+import Modal from "../../../Modal";
+import { UPDATE_EVENT } from "../../../stores/AsyncStore";
+import { NotificationLevel } from "../../../stores/notifications/NotificationLevel";
+import { StaticNotificationState } from "../../../stores/notifications/StaticNotificationState";
+import { VideoRecordingStore } from "../../../stores/VideoRecordingStore";
 import { createVideoMessageContent } from "../../../utils/createVideoMessageContent";
+import { doMaybeLocalRoomAction } from "../../../utils/local-room";
+import { addReplyToMessageContent } from "../../../utils/Reply";
+import { PlaybackManager } from "../../../video/PlaybackManager";
+import { type IUpload, type VideoMessageRecording } from "../../../video/VideoMessageRecording";
+import { RecordingState } from "../../../video/VideoRecording";
+import ErrorDialog from "../dialogs/ErrorDialog";
 import AccessibleButton from "../elements/AccessibleButton";
+import InlineSpinner from "../elements/InlineSpinner";
+import LiveRecordingPreview from "../video_messages/LiveRecordingPreview";
+import RecordingPlayback, { PlaybackLayout } from "../video_messages/RecordingPlayback";
+import NotificationBadge from "./NotificationBadge";
+import { attachMentions, attachRelation } from "./SendMessageComposer";
 
 interface IProps {
     room: Room;
@@ -167,7 +167,7 @@ export default class VideoRecordComposerTile extends React.PureComponent<IProps,
             if (!devices?.[MediaDeviceKindEnum.VideoInput]?.length) {
                 Modal.createDialog(ErrorDialog, {
                     title: "No video input found",
-                    description: <p>Ensure you have video camera enabled</p>
+                    description: <p>Ensure you have video camera enabled</p>,
                 });
                 return;
             }

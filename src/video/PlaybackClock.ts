@@ -6,10 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import { SimpleObservable } from "matrix-widget-api";
 import { type MatrixEvent } from "matrix-js-sdk/src/matrix";
+import { SimpleObservable } from "matrix-widget-api";
 
 import { type IDestroyable } from "../utils/IDestroyable";
+import { type VideoRecording } from "./VideoRecording";
 
 export class PlaybackClock implements IDestroyable {
     private clipStart = 0;
@@ -20,7 +21,7 @@ export class PlaybackClock implements IDestroyable {
     private clipDuration = 0;
     private placeholderDuration = 0;
 
-    public constructor(private context: HTMLMediaElement) {}
+    public constructor(private context: VideoRecording) { }
 
     public get durationSeconds(): number {
         return this.clipDuration || this.placeholderDuration;
@@ -32,11 +33,7 @@ export class PlaybackClock implements IDestroyable {
     }
 
     public get timeSeconds(): number {
-        return (this.context.currentTime - this.clipStart) % this.clipDuration;
-    }
-
-    public get liveData(): SimpleObservable<number[]> {
-        return this.observable;
+        return (this.context.durationSeconds - this.clipStart) % this.clipDuration;
     }
 
     private checkTime = (force = false): void => {
@@ -53,12 +50,12 @@ export class PlaybackClock implements IDestroyable {
     }
 
     public flagLoadTime(): void {
-        this.clipStart = this.context.currentTime;
+        this.clipStart = 0; // todo: currentTime
     }
 
     public flagStart(): void {
         if (this.stopped) {
-            this.clipStart = this.context.currentTime;
+            this.clipStart = 0; // todo: currentTime
             this.stopped = false;
         }
 
@@ -73,7 +70,7 @@ export class PlaybackClock implements IDestroyable {
 
         // Reset the clock time now so that the update going out will trigger components
         // to check their seek/position information (alongside the clock).
-        this.clipStart = this.context.currentTime;
+        this.clipStart = 0; // todo: currentTime
     }
 
     public syncTo(contextTime: number, clipTime: number): void {

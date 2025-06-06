@@ -9,8 +9,7 @@ import { type IDestroyable } from "../utils/IDestroyable";
 import { Singleflight } from "../utils/Singleflight";
 
 export interface IRecordingUpdate {
-    waveform: number[]; // floating points between 0 (low) and 1 (high).
-    timeSeconds: number; // float
+    noop: string
 }
 
 export enum RecordingState {
@@ -23,9 +22,9 @@ export enum RecordingState {
 
 export class VideoRecording extends EventEmitter implements IDestroyable {
     private recorderContext?: MediaRecorder;
-    // private recorderSource?: MediaStreamVideoSourceNode;
-    private recorderStream?: MediaStream;
+    public recorderStream?: MediaStream;
     private recording = false;
+    private startTime = -1;
     private observable?: SimpleObservable<IRecordingUpdate>;
     public onDataAvailable?: (data: Blob) => void;
 
@@ -34,8 +33,8 @@ export class VideoRecording extends EventEmitter implements IDestroyable {
     }
 
     public get durationSeconds(): number {
-        if (!this.recorderContext) throw new Error("Duration not available without a recording");
-        return 0;
+        if (!this.recorderContext || this.startTime === -1) throw new Error("Duration not available without a recording");
+        return Date.now() - this.startTime;
     }
 
     public get isRecording(): boolean {
@@ -53,6 +52,9 @@ export class VideoRecording extends EventEmitter implements IDestroyable {
             this.recorderStream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     deviceId: MediaDeviceHandler.getVideoInput(),
+                },
+                audio: {
+                    deviceId: MediaDeviceHandler.getAudioInput(),
                 },
             });
             this.recorderContext = new MediaRecorder(this.recorderStream);
@@ -73,11 +75,6 @@ export class VideoRecording extends EventEmitter implements IDestroyable {
         }
     }
 
-    public get liveData(): SimpleObservable<IRecordingUpdate> {
-        if (!this.recording || !this.observable) throw new Error("No observable when not recording");
-        return this.observable;
-    }
-
     public get isSupported(): boolean {
         return Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
     }
@@ -91,8 +88,9 @@ export class VideoRecording extends EventEmitter implements IDestroyable {
         }
         this.observable = new SimpleObservable<IRecordingUpdate>();
         await this.makeRecorder();
-        this.recorderContext?.start();
+        this.recorderContext?.start(100);
         this.recording = true;
+        this.startTime = Date.now();
         this.emit(RecordingState.Started);
     }
 
@@ -122,5 +120,6 @@ export class VideoRecording extends EventEmitter implements IDestroyable {
         Singleflight.forgetAllFor(this);
         // noinspection JSIgnoredPromiseFromCall - not concerned about being called async here
         this.observable?.close();
+        this.startTime = -1;
     }
 }

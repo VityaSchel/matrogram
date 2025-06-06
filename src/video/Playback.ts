@@ -1,11 +1,12 @@
 /* eslint-disable matrix-org/require-copyright-header */
 import EventEmitter from "events";
-import { type SimpleObservable } from "matrix-widget-api";
+import React from "react";
 
 import { UPDATE_EVENT } from "../stores/AsyncStore";
 import { type IDestroyable } from "../utils/IDestroyable";
 import { clamp } from "../utils/numbers";
 import { PlaybackClock } from "./PlaybackClock";
+import { type VideoRecording } from "./VideoRecording";
 
 export enum PlaybackState {
     Decoding = "decoding",
@@ -15,32 +16,38 @@ export enum PlaybackState {
 }
 
 export interface PlaybackInterface {
-    readonly videoPlayer: HTMLVideoElement;
+    readonly videoRecording: VideoRecording;
     readonly currentState: PlaybackState;
-    readonly liveData: SimpleObservable<number[]>;
     readonly timeSeconds: number;
     readonly durationSeconds: number;
     skipTo(timeSeconds: number): Promise<void>;
+    playerRef: React.RefObject<HTMLVideoElement | null>;
 }
 
 export class Playback extends EventEmitter implements IDestroyable, PlaybackInterface {
-    public readonly videoPlayer: HTMLVideoElement;
+    public readonly videoRecording: VideoRecording;
     private state = PlaybackState.Decoding;
     private readonly clock: PlaybackClock;
-    private readonly fileSize: number;
+    private readonly blobs: Blob[];
+    public playerRef: React.RefObject<HTMLVideoElement | null> = React.createRef<HTMLVideoElement | null>();
 
     /**
      * Creates a new playback instance from a buffer.
-     * @param {number} size The buffer size.
+     * @param {Blobs[]} blobs The buffers.
      * can be calculated. Contains values between zero and one, inclusive.
      */
     public constructor(
-        size: number,
+        blobs: Blob[],
+        videoPlayer: VideoRecording,
     ) {
         super();
-        this.fileSize = size;
-        this.videoPlayer = document.createElement("video");
-        this.clock = new PlaybackClock(this.videoPlayer);
+        this.blobs = blobs;
+        this.videoRecording = videoPlayer;
+        this.clock = new PlaybackClock(this.videoRecording);
+    }
+
+    public get data(): Blob {
+        return new Blob(this.blobs, { type: this.videoRecording.contentType });
     }
 
     /**
@@ -48,15 +55,11 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
      * when the playback goes through phase changes.
      */
     public get sizeBytes(): number {
-        return this.fileSize;
+        return this.blobs.reduce((acc, blob) => acc + blob.size, 0);
     }
 
     public get clockInfo(): PlaybackClock {
         return this.clock;
-    }
-
-    public get liveData(): SimpleObservable<number[]> {
-        return this.clock.liveData;
     }
 
     public get timeSeconds(): number {
@@ -101,7 +104,7 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
         }
 
         this.clock.flagLoadTime(); // must happen first because setting the duration fires a clock update
-        this.clock.durationSeconds = this.videoPlayer?.duration;
+        this.clock.durationSeconds = this.videoRecording?.durationSeconds;
 
         // Signal that we're not decoding anymore. This is done last to ensure the clock is updated for
         // when the downstream callers try to use it.
@@ -114,7 +117,7 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
 
     public async play(): Promise<void> {
         if (this.state === PlaybackState.Stopped) {
-            await this.videoPlayer.play();
+            await this.playerRef.current?.play();
         }
 
         this.clock.flagStart();
@@ -122,7 +125,7 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
     }
 
     public async pause(): Promise<void> {
-        await this.videoPlayer.pause();
+        await this.playerRef.current?.pause();
         this.emit(PlaybackState.Paused);
     }
 
@@ -144,16 +147,19 @@ export class Playback extends EventEmitter implements IDestroyable, PlaybackInte
 
         if (isPlaying) {
             // Pause first so we can get an accurate measurement of time
-            await this.videoPlayer.pause();
+            await this.playerRef.current?.pause();
         }
 
-        const now = this.videoPlayer.currentTime;
+        const now = this.playerRef.current?.currentTime;
+        if (now) {
+            this.clock.syncTo(now, timeSeconds);
+        }
+        if (this.playerRef.current) {
+            this.playerRef.current.currentTime = timeSeconds;
+        }
 
-        this.clock.syncTo(now, timeSeconds);
-
-        this.videoPlayer.currentTime = timeSeconds;
         if (isPlaying) {
-            await this.videoPlayer.play();
+            await this.playerRef.current?.play();
         } else {
             await this.pause();
         }
